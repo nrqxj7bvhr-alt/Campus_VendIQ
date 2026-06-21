@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus VendIQ</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1559d6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="VendIQ">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <style>
+        :root {
+            --primary: #1559d6;
+            --primary-2: #3b82f6;
+            --primary-dark: #103fa3;
+            --primary-light: #e9f0fe;
+            --accent: #06b6d4;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #16a34a;
+            --bg: #eef2f9;
+            --card: #ffffff;
+            --text: #0f172a;
+            --text-light: #64748b;
+            --border: #e6eaf2;
+            --grad: linear-gradient(135deg, #2563eb 0%, #1559d6 55%, #103fa3 100%);
+            --shadow: 0 2px 10px rgba(15,23,42,0.06);
+            --shadow-md: 0 6px 18px rgba(15,23,42,0.09);
+            --shadow-lg: 0 14px 34px rgba(15,23,42,0.14);
+            --radius: 16px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, 'Segoe UI', system-ui, sans-serif; background: var(--bg);
+            min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; color: var(--text); }
+
+        .app-shell { width: 100%; max-width: 430px; min-height: 100vh; background: var(--bg);
+            box-shadow: var(--shadow-lg); display: flex; flex-direction: column; position: relative; }
+
+        /* ---- SPLASH (shown until auth resolves — kills the login-page flash) ---- */
+        #splash { position: fixed; inset: 0; z-index: 6000; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 18px; color: #fff; transition: opacity .35s ease;
+            background: radial-gradient(120% 90% at 80% -10%, #1e3a8a 0%, #0b1f4d 60%, #081538 100%); }
+        #splash.hide { opacity: 0; pointer-events: none; }
+        #splash .s-badge { width: 78px; height: 78px; border-radius: 22px; font-size: 40px; display: flex;
+            align-items: center; justify-content: center; background: linear-gradient(150deg,#38bdf8,#2563eb);
+            box-shadow: 0 16px 40px rgba(2,12,40,.5); }
+        #splash .s-name { font-size: 23px; font-weight: 800; letter-spacing: -.3px; }
+        #splash .s-name .iq { color: #22d3ee; }
+        #splash .s-spin { width: 26px; height: 26px; border: 3px solid rgba(255,255,255,.3);
+            border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; }
+
+        /* ---- VIEWS ---- */
+        .view { display: none; padding: 20px; flex: 1; }
+        .active-view { display: block; animation: viewIn .28s cubic-bezier(.4,0,.2,1); }
+        @keyframes viewIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @media (prefers-reduced-motion: reduce) { .active-view { animation: none; } }
+
+        /* ---- HEADER BAR (inside logged-in views) ---- */
+        .app-bar {
+            background: var(--grad); color: white;
+            padding: 16px 18px; display: flex; align-items: center; gap: 12px;
+            position: sticky; top: 0; z-index: 10; box-shadow: 0 4px 18px rgba(21,89,214,0.28);
+        }
+        .app-bar h1 { font-size: 17px; font-weight: 800; flex: 1; letter-spacing: -.2px; }
+        .app-bar .avatar {
+            width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.22);
+            display: flex; align-items: center; justify-content: center; font-size: 17px; cursor: pointer;
+            flex-shrink: 0; border: 1px solid rgba(255,255,255,0.3); transition: background .15s;
+        }
+        .app-bar .avatar:active { background: rgba(255,255,255,0.4); }
+        .back-btn-bar {
+            background: none; border: none; color: white; font-size: 22px; cursor: pointer;
+            padding: 0; width: auto; margin: 0; line-height: 1; flex-shrink: 0;
+        }
+
+        /* ---- TYPOGRAPHY ---- */
+        .text-muted { color: var(--text-light); font-size: 13px; }
+        h2 { font-size: 20px; color: var(--text); font-weight: 700; }
+        h3 { font-size: 17px; color: var(--text); font-weight: 700; }
+
+        /* ---- INPUTS ---- */
+        input, select {
+            width: 100%; padding: 13px 15px; border: 1.6px solid var(--border);
+            border-radius: 12px; font-size: 15px; color: var(--text);
+            background: #f8fafc; margin-bottom: 10px; transition: border-color .15s, box-shadow .15s, background .15s;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--primary-2); background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.12); }
+
+        /* ---- BUTTONS ---- */
+        button {
+            width: 100%; padding: 14px; background: var(--grad); color: white;
+            border: none; border-radius: 13px; cursor: pointer; font-size: 15px;
+            font-weight: 800; transition: filter .15s, transform .1s, box-shadow .15s; margin-top: 8px;
+            box-shadow: 0 8px 20px rgba(21,89,214,0.28);
+        }
+        button:hover { filter: brightness(1.05); }
+        button:active { transform: scale(0.98); }
+        .btn-accent { background: var(--accent); box-shadow: 0 8px 20px rgba(6,182,212,0.28); }
+        .btn-danger { background: var(--danger); box-shadow: 0 8px 20px rgba(239,68,68,0.28); }
+        .btn-warning { background: linear-gradient(135deg, #fbbf24, #f59e0b); box-shadow: 0 8px 20px rgba(245,158,11,0.3); }
+        .btn-secondary { background: #64748b; box-shadow: none; }
+        .btn-outline { background: none !important; color: var(--primary); border: 2px solid var(--primary); box-shadow: none; }
+        .btn-outline:hover { background: var(--primary-light) !important; filter: none; }
+        .btn-sm { padding: 8px 14px; font-size: 13px; margin-top: 0; width: auto; box-shadow: none; }
+        .btn-lg { padding: 16px; font-size: 17px; }
+
+        /* ---- CARDS ---- */
+        .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin-bottom: 12px; }
+        .card-border { border: 1px solid var(--border); }
+
+        /* ---- BALANCE CARD ---- */
+        .balance-card {
+            background: var(--grad);
+            color: white; border-radius: 20px; padding: 24px 22px;
+            margin-bottom: 18px; position: relative; overflow: hidden;
+            box-shadow: 0 16px 36px rgba(21,89,214,0.32);
+        }
+        .balance-card::before {
+            content: ''; position: absolute; top: -40px; right: -30px;
+            width: 150px; height: 150px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(34,211,238,0.35), transparent 70%);
+        }
+        .balance-card::after {
+            content: ''; position: absolute; bottom: -30px; right: 50px;
+            width: 90px; height: 90px; border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+        }
+        .balance-card > * { position: relative; z-index: 1; }
+        .balance-label { font-size: 12px; opacity: 0.9; margin-bottom: 6px; letter-spacing: 1px; text-transform: uppercase; }
+        .balance-amount { font-size: 42px; font-weight: 800; letter-spacing: -1.5px; }
+        .balance-sub { font-size: 12.5px; opacity: 0.8; margin-top: 6px; }
+
+        /* ---- QUICK ACTIONS ---- */
+        .quick-grid { display: flex; flex-direction: column; gap: 11px; margin-bottom: 18px; }
+        .quick-btn {
+            background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 15px;
+            padding: 15px 16px; text-align: left; cursor: pointer; transition: transform .12s, box-shadow .15s;
+            box-shadow: var(--shadow); display: flex; align-items: center; gap: 14px; width: 100%;
+        }
+        .quick-btn:hover { box-shadow: var(--shadow-md); filter: none; transform: translateY(-1px); }
+        .quick-btn:active { transform: scale(0.99); }
+        .quick-btn .qb-icon {
+            font-size: 22px; flex-shrink: 0; width: 46px; height: 46px; border-radius: 13px;
+            display: flex; align-items: center; justify-content: center; color: #fff;
+        }
+        .quick-btn .qb-label { font-size: 15.5px; font-weight: 700; color: var(--text); }
+        .quick-btn .qb-sub { font-size: 12px; color: var(--text-light); margin-top: 1px; }
+        .quick-btn .qb-chev { margin-left: auto; color: var(--text-light); font-size: 18px; opacity: .5; }
+
+        /* ---- LIST ITEMS ---- */
+        .list-item {
+            background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+            padding: 14px; margin-bottom: 8px; box-shadow: var(--shadow);
+        }
+        .list-item.green-left { border-left: 4px solid var(--primary); }
+        .list-item.blue-left { border-left: 4px solid var(--accent); }
+
+        /* ---- INVENTORY ITEM ---- */
+        .inv-item {
+            background: var(--card); border: 1px solid var(--border);
+            border-left: 4px solid var(--accent); border-radius: 8px;
+            padding: 14px; margin-bottom: 8px; display: flex;
+            justify-content: space-between; align-items: center; box-shadow: var(--shadow);
+        }
+        .inv-item.out-of-stock { opacity: 0.55; border-left-color: var(--danger); }
+
+        /* ---- MACHINE CARD ---- */
+        .machine-card {
+            border: 2px solid var(--primary); border-radius: 10px; padding: 16px;
+            cursor: pointer; transition: 0.2s; background: var(--card); box-shadow: var(--shadow);
+            margin-bottom: 10px;
+        }
+        .machine-card:hover { background: var(--primary); color: white; }
+        .machine-card:hover .mc-sub { color: rgba(255,255,255,0.8); }
+        .mc-status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; margin-top: 6px; }
+        .status-dot-sm { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
+        .status-dot-sm.busy { background: var(--warning); }
+        .status-dot-sm.offline { background: var(--danger); }
+
+        /* ---- STEP INDICATOR ---- */
+        .step-indicator { display: flex; align-items: center; margin-bottom: 20px; }
+        .step { flex: 1; text-align: center; position: relative; }
+        .step-dot { width: 28px; height: 28px; border-radius: 50%; background: var(--border); color: var(--text-light); font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 4px; }
+        .step.active .step-dot { background: var(--primary); color: white; }
+        .step.done .step-dot { background: var(--primary-dark); color: white; }
+        .step-label { font-size: 10px; color: var(--text-light); font-weight: 600; }
+        .step.active .step-label, .step.done .step-label { color: var(--primary); }
+        .step-line { flex: 1; height: 2px; background: var(--border); margin-bottom: 18px; }
+        .step-line.done { background: var(--primary); }
+
+        /* ---- LOADER ---- */
+        .loader { border: 3px solid var(--border); border-top: 3px solid var(--primary); border-radius: 50%; width: 36px; height: 36px; animation: spin 0.8s linear infinite; margin: 16px auto; }
+        @keyframes spin { 0%{ transform: rotate(0deg); } 100%{ transform: rotate(360deg); } }
+
+        /* ---- BADGES ---- */
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 20px; font-size: 12px; font-weight: 700; color: white; background: var(--primary); }
+        .badge-red { background: var(--danger); }
+        .badge-blue { background: var(--accent); }
+
+        /* ---- RECEIPT BOX ---- */
+        .receipt-box { border: 2px dashed var(--border); border-radius: 10px; padding: 22px; margin: 16px 0; background: #f8fff8; text-align: center; }
+        .receipt-total { font-size: 36px; font-weight: 800; color: var(--danger); margin: 8px 0; }
+        .receipt-item-name { font-size: 17px; font-weight: 700; color: var(--text); }
+
+        /* ---- MODALS ---- */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.55); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-box { background: white; padding: 28px 24px; border-radius: var(--radius); width: 92%; max-width: 360px; box-shadow: var(--shadow-lg); text-align: center; }
+        .modal-box h3 { margin-bottom: 8px; }
+
+        /* ---- HISTORY ---- */
+        .history-item {
+            background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+            padding: 14px; margin-bottom: 8px; box-shadow: var(--shadow);
+        }
+        .history-item .hi-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 4px; }
+        .history-item .hi-name { font-weight: 700; font-size: 14px; color: var(--text); flex: 1; }
+        .history-item .hi-meta { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+
+        /* ---- PROFILE ---- */
+        .profile-avatar { width: 76px; height: 76px; border-radius: 50%; background: var(--grad); color: white; font-size: 32px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; box-shadow: 0 10px 24px rgba(21,89,214,0.3); }
+        .profile-info-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+        .profile-info-row:last-child { border-bottom: none; }
+        .pir-label { color: var(--text-light); font-size: 13px; }
+        .pir-value { font-weight: 600; color: var(--text); }
+
+        /* ---- LOGIN ---- */
+        .login-hero { background: var(--grad); padding: 46px 24px 30px; text-align: center; color: white; border-radius: 0 0 28px 28px; }
+        .login-hero .app-name { font-size: 27px; font-weight: 800; margin-bottom: 4px; letter-spacing: -.4px; }
+        .login-hero .app-name .iq { color: var(--accent); }
+        .login-hero .app-tagline { font-size: 12.5px; opacity: 0.88; letter-spacing: 2px; text-transform: uppercase; }
+        .login-body { padding: 24px; }
+        .auth-tabs { display: flex; gap: 4px; margin-bottom: 20px; border-radius: 12px; padding: 5px; background: var(--primary-light); }
+        .auth-tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-size: 14px; font-weight: 700; color: var(--text-light); background: transparent; border-radius: 9px; transition: 0.15s; }
+        .auth-tab.active { background: #fff; color: var(--primary); box-shadow: 0 2px 8px rgba(21,89,214,0.15); }
+
+        /* ---- NEGATIVE BALANCE MODAL ---- */
+        #negative-balance-modal .modal-box { border: 2px solid var(--danger); }
+        .countdown-ring { font-size: 32px; font-weight: 800; color: var(--danger); margin: 10px 0; }
+
+        /* ---- TOAST NOTIFICATIONS (non-blocking, friendlier than alert) ---- */
+        #toast-host {
+            position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+            z-index: 2000; display: flex; flex-direction: column; gap: 8px;
+            width: max-content; max-width: 90%; pointer-events: none;
+        }
+        .toast {
+            background: var(--text); color: white; padding: 11px 18px; border-radius: 22px;
+            font-size: 13px; font-weight: 600; box-shadow: var(--shadow-lg);
+            opacity: 0; transform: translateY(12px); transition: opacity .25s, transform .25s;
+            text-align: center;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--danger); }
+        .toast.info { background: var(--primary); }
+
+        /* ---- PASSWORD SHOW/HIDE ---- */
+        .pw-wrap { position: relative; }
+        .pw-toggle {
+            position: absolute; right: 12px; top: 11px; cursor: pointer; font-size: 18px;
+            user-select: none; opacity: 0.6; line-height: 1;
+        }
+        .pw-toggle:hover { opacity: 1; }
+
+        /* ---- STOCK BAR + AFFORDABILITY (inventory) ---- */
+        .stock-bar-wrap { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 10px; }
+        .stock-bar { height: 100%; background: var(--primary); border-radius: 3px; transition: width .3s; }
+        .stock-bar.low { background: var(--warning); }
+        .stock-bar.out { background: var(--danger); }
+        .afford-tag { font-size: 11px; font-weight: 700; margin-top: 6px; }
+        .afford-yes { color: var(--success); }
+        .afford-no { color: var(--text-light); }
+
+        /* ---- NATIVE-FEEL DIALOG (replaces browser confirm/alert) ---- */
+        .app-dialog-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            z-index: 3000; align-items: center; justify-content: center;
+            -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+        }
+        .app-dialog-overlay.show { display: flex; }
+        .app-dialog {
+            background: var(--card); width: 88%; max-width: 340px; border-radius: 18px;
+            padding: 26px 22px 22px; text-align: center; box-shadow: 0 14px 44px rgba(0,0,0,0.28);
+            animation: dlgPop .18s ease-out;
+        }
+        @keyframes dlgPop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .app-dialog .ad-icon { font-size: 42px; margin-bottom: 8px; line-height: 1; }
+        .app-dialog h3 { margin-bottom: 6px; font-size: 19px; }
+        .app-dialog p { color: var(--text-light); font-size: 14px; margin-bottom: 20px; line-height: 1.45; }
+        .ad-actions { display: flex; gap: 10px; }
+        .ad-actions button { flex: 1; margin: 0; padding: 13px; border-radius: 10px; }
+        .ad-btn-cancel { background: #e9ecef !important; color: var(--text) !important; }
+        .ad-btn-cancel:hover { filter: brightness(95%); }
+        /* On phones: slide up as a bottom sheet (native app feel) */
+        @media (max-width: 480px) {
+            .app-dialog-overlay { align-items: flex-end; }
+            .app-dialog {
+                width: 100%; max-width: 100%; border-radius: 22px 22px 0 0;
+                padding-bottom: 30px; animation: sheetUp .26s ease-out;
+            }
+            @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+            .app-dialog::before {
+                content: ''; display: block; width: 40px; height: 4px; border-radius: 3px;
+                background: var(--border); margin: -8px auto 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="app-shell">
+
+    <!-- SPLASH (prevents login-page flash when arriving already authenticated) -->
+    <div id="splash">
+        <div class="s-badge">🛒</div>
+        <div class="s-name">Campus Vend<span class="iq">IQ</span></div>
+        <div class="s-spin"></div>
+    </div>
+
+    <!-- ====== LOGIN VIEW ====== -->
+    <div id="login-view" class="view active-view" style="padding:0;">
+        <div class="login-hero">
+            <div style="font-size:46px;margin-bottom:6px;">🛒</div>
+            <div class="app-name">Campus Vend<span class="iq">IQ</span></div>
+            <div class="app-tagline">Smart · Cashless · Campus</div>
+        </div>
+        <div class="login-body">
+            <div class="auth-tabs">
+                <div class="auth-tab active" id="tab-login" onclick="setAuthMode('login')">Login</div>
+                <div class="auth-tab" id="tab-signup" onclick="setAuthMode('signup')">Create Account</div>
+            </div>
+            <p id="auth-subtitle" style="font-size:13px;color:var(--text-light);margin-bottom:14px;"></p>
+            <input type="email" id="email" placeholder="University Email (@graduate.utm.my)">
+            <div class="pw-wrap">
+                <input type="password" id="password" placeholder="Password (min 6 chars)" style="padding-right:42px;">
+                <span class="pw-toggle" id="pw-toggle" onclick="togglePassword()" title="Show / hide password">👁</span>
+            </div>
+            <input type="text" id="fullname" placeholder="Full Name" style="display:none;">
+            <button id="login-btn">Login</button>
+            <button id="signup-btn" style="display:none;background:var(--primary);">Create Account</button>
+            <div style="text-align:right;margin-top:8px;">
+                <a href="#" id="forgot-password-link" style="color:var(--primary);font-size:13px;text-decoration:none;">Forgot Password?</a>
+            </div>
+            <p id="auth-error" style="color:var(--danger);font-size:13px;margin-top:10px;"></p>
+        </div>
+    </div>
+
+    <!-- ====== HOME VIEW ====== -->
+    <div id="home-view" class="view" style="padding:0;">
+        <div class="app-bar">
+            <h1>🛒 Campus VendIQ</h1>
+            <div class="avatar" onclick="switchView('profile-view')" title="Profile">👤</div>
+        </div>
+        <div style="padding:18px;">
+            <p id="welcome-name" style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:14px;">Welcome!</p>
+
+            <div class="balance-card">
+                <div class="balance-label">Available Balance</div>
+                <div class="balance-amount">RM <span id="user-balance">0.00</span></div>
+                <div class="balance-sub" id="balance-status-text">Ready to vend</div>
+            </div>
+
+            <div class="quick-grid">
+                <div class="quick-btn" onclick="switchView('buy-view')">
+                    <span class="qb-icon" style="background:linear-gradient(135deg,#22c55e,#16a34a);">🛒</span>
+                    <div><div class="qb-label">Buy Items</div><div class="qb-sub">Unlock the vending machine</div></div>
+                    <span class="qb-chev">›</span>
+                </div>
+                <div class="quick-btn" onclick="switchView('check-machine-view')">
+                    <span class="qb-icon" style="background:linear-gradient(135deg,#22d3ee,#06b6d4);">📦</span>
+                    <div><div class="qb-label">Check Stock</div><div class="qb-sub">View item availability</div></div>
+                    <span class="qb-chev">›</span>
+                </div>
+                <div class="quick-btn" onclick="switchView('topup-view')">
+                    <span class="qb-icon" style="background:linear-gradient(135deg,#3b82f6,#1559d6);">💳</span>
+                    <div><div class="qb-label">Reload Balance</div><div class="qb-sub">Top up with Touch 'n Go</div></div>
+                    <span class="qb-chev">›</span>
+                </div>
+                <div class="quick-btn" onclick="switchView('history-view')">
+                    <span class="qb-icon" style="background:linear-gradient(135deg,#94a3b8,#64748b);">📜</span>
+                    <div><div class="qb-label">Transaction History</div><div class="qb-sub">Past purchases &amp; top-ups</div></div>
+                    <span class="qb-chev">›</span>
+                </div>
+            </div>
+
+            <button class="btn-danger" id="logout-btn" style="margin-top:8px;">Log Out</button>
+        </div>
+    </div>
+
+    <!-- ====== PROFILE VIEW ====== -->
+    <div id="profile-view" class="view" style="padding:0;">
+        <div class="app-bar">
+            <button class="back-btn-bar" onclick="switchView('home-view')">←</button>
+            <h1>My Profile</h1>
+        </div>
+        <div style="padding:20px;">
+            <div style="text-align:center;margin-bottom:20px;">
+                <div class="profile-avatar">👤</div>
+                <h3 id="profile-name-display">–</h3>
+                <p class="text-muted" id="profile-email-display">–</p>
+            </div>
+            <div class="card card-border">
+                <div class="profile-info-row">
+                    <span class="pir-label">Full Name</span>
+                    <span class="pir-value" id="pir-name">–</span>
+                </div>
+                <div class="profile-info-row">
+                    <span class="pir-label">Email</span>
+                    <span class="pir-value" id="pir-email" style="font-size:13px;">–</span>
+                </div>
+                <div class="profile-info-row">
+                    <span class="pir-label">Balance</span>
+                    <span class="pir-value" id="pir-balance" style="color:var(--primary);">RM 0.00</span>
+                </div>
+            </div>
+            <div class="card card-border" style="margin-top:12px;">
+                <h3 style="margin-bottom:12px;font-size:15px;">Edit Full Name</h3>
+                <input type="text" id="edit-name-input" placeholder="Enter new full name">
+                <button onclick="saveFullName()" style="background:var(--primary);">Save Name</button>
+                <p id="edit-name-msg" style="font-size:13px;margin-top:8px;"></p>
+            </div>
+            <button onclick="sendPasswordReset()" class="btn-outline" style="margin-top:4px;">🔐 Send Password Reset Email</button>
+        </div>
+    </div>
+
+    <!-- ====== TOP-UP VIEW ====== -->
+    <div id="topup-view" class="view" style="padding:0;">
+        <div class="app-bar">
+            <button class="back-btn-bar" onclick="switchView('home-view')">←</button>
+            <h1>Reload Balance</h1>
+        </div>
+        <div style="padding:20px;">
+            <div id="debt-banner" style="display:none;background:#fde8e8;border:1.5px solid var(--danger);border-radius:10px;padding:14px;margin-bottom:16px;">
+                <div style="font-weight:800;color:var(--danger);font-size:15px;margin-bottom:4px;">⚠️ Outstanding Balance</div>
+                <p style="font-size:13px;color:var(--text);line-height:1.45;">You took more than your balance covered. You owe <strong>RM <span id="debt-amount">0.00</span></strong>. Top up at least this amount to use the app again. Unpaid debts are reported to UTM Administration.</p>
+                <button onclick="debtLogout()" class="btn-secondary btn-sm" style="margin-top:10px;width:auto;">Log Out</button>
+            </div>
+            <div class="balance-card" style="margin-bottom:20px;">
+                <div class="balance-label">Current Balance</div>
+                <div class="balance-amount">RM <span id="current-balance-display">0.00</span></div>
+            </div>
+            <div class="card card-border">
+                <h3 style="margin-bottom:14px;font-size:15px;">Choose Amount</h3>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+                    <button class="btn-outline btn-sm" onclick="setTopupAmount(5)">RM 5</button>
+                    <button class="btn-outline btn-sm" onclick="setTopupAmount(10)">RM 10</button>
+                    <button class="btn-outline btn-sm" onclick="setTopupAmount(20)">RM 20</button>
+                    <button class="btn-outline btn-sm" onclick="setTopupAmount(30)">RM 30</button>
+                    <button class="btn-outline btn-sm" onclick="setTopupAmount(50)">RM 50</button>
+                    <button class="btn-outline btn-sm" onclick="setTopupAmount(100)">RM 100</button>
+                </div>
+                <input type="number" id="topup-amount" placeholder="Or enter custom amount" min="1" step="0.50">
+                <button id="pay-tng-btn" style="background:#004eb1;" class="btn-lg">💳 Pay with Touch 'n Go eWallet</button>
+                <p id="topup-msg" style="color:var(--danger);font-size:13px;margin-top:8px;"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== BUY VIEW (choose machine) ====== -->
+    <div id="buy-view" class="view" style="padding:0;">
+        <div class="app-bar">
+            <button class="back-btn-bar" onclick="switchView('home-view')">←</button>
+            <h1>Purchase Items</h1>
+        </div>
+        <div style="padding:20px;">
+            <p class="text-muted" style="margin-bottom:16px;">Choose a nearby vending machine to unlock.</p>
+            <div class="machine-card" onclick="selectMachine('Machine 1', 'unlock-view')">
+                <h3 style="color:var(--primary);">Machine 01</h3>
+                <p class="mc-sub text-muted" style="font-size:13px;margin:4px 0;">📍 Faculty of Electrical Engineering</p>
+                <div class="mc-status" id="mc-buy-status">
+                    <span class="status-dot-sm"></span>
+                    <span id="mc-buy-status-text">Checking status…</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== CHECK STOCK VIEW ====== -->
+    <div id="check-machine-view" class="view" style="padding:0;">
+        <div class="app-bar">
+            <button class="back-btn-bar" onclick="switchView('home-view')">←</button>
+            <h1>Check Inventory</h1>
+        </div>
+        <div style="padding:20px;">
+            <p class="text-muted" style="margin-bottom:16px;">Select a machine to see available items.</p>
+            <div class="machine-card" onclick="selectMachine('Machine 1', 'inventory-detail-view')">
+                <h3 style="color:var(--primary);">Machine 01</h3>
+                <p class="mc-sub text-muted" style="font-size:13px;margin:4px 0;">📍 Faculty of Electrical Engineering</p>
+                <p style="font-size:12px;color:var(--accent);margin-top:4px;">Tap to view stock →</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== INVENTORY DETAIL VIEW ====== -->
+    <div id="inventory-detail-view" class="view" style="padding:0;">
+        <div class="app-bar">
+            <button class="back-btn-bar" onclick="switchView('check-machine-view')">←</button>
+            <h1><span id="inv-machine-title">Machine 01</span> Stock</h1>
+        </div>
+        <div style="padding:20px;">
+            <div id="dedicated-inventory-list">
+                <div class="loader"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== UNLOCK / PURCHASE FLOW ====== -->
+    <div id="unlock-view" class="view" style="padding:0;">
+        <div class="app-bar" id="unlock-app-bar">
+            <button class="back-btn-bar" onclick="switchView('buy-view')">←</button>
+            <h1>Machine 01</h1>
+        </div>
+        <div style="padding:20px;">
+
+            <!-- Step indicator -->
+            <div class="step-indicator" id="step-indicator">
+                <div class="step active" id="step1">
+                    <div class="step-dot">1</div>
+                    <div class="step-label">UNLOCK</div>
+                </div>
+                <div class="step-line" id="step-line-1"></div>
+                <div class="step" id="step2">
+                    <div class="step-dot">2</div>
+                    <div class="step-label">TAKE ITEMS</div>
+                </div>
+                <div class="step-line" id="step-line-2"></div>
+                <div class="step" id="step3">
+                    <div class="step-dot">3</div>
+                    <div class="step-label">RECEIPT</div>
+                </div>
+            </div>
+
+            <!-- Phase 1: Unlock button -->
+            <div id="unlock-phase">
+                <div class="card card-border" style="text-align:center;margin-bottom:16px;">
+                    <div style="font-size:40px;margin-bottom:8px;">🔒</div>
+                    <h3>Ready to Unlock</h3>
+                    <p class="text-muted" style="margin-top:6px;">Your Balance: <strong style="color:var(--primary);">RM <span id="unlock-balance">0.00</span></strong></p>
+                    <p class="text-muted" style="font-size:12px;margin-top:8px;">Stand in front of the machine, then press the button. The door unlocks and stays open until you push it closed.</p>
+                </div>
+                <button id="unlock-door-btn" class="btn-lg btn-warning">🔓 UNLOCK DOOR</button>
+                <p id="unlock-error" style="color:var(--danger);font-size:13px;margin-top:10px;"></p>
+            </div>
+
+            <!-- Phase 2: Waiting / hardware sim -->
+            <div id="hardware-sim-phase" style="display:none;text-align:center;">
+                <div class="loader" id="sim-loader"></div>
+                <h2 id="sim-title" style="color:var(--warning);margin-bottom:8px;">Door Unlocked!</h2>
+                <p id="sim-desc" style="color:var(--text);margin-bottom:6px;">Open the door and take your items, then push it closed.</p>
+                <p id="sim-hint" class="text-muted" style="font-size:12px;">The machine is reading the trays in real time.</p>
+            </div>
+
+            <!-- Phase 3: Receipt -->
+            <div id="receipt-phase" style="display:none;text-align:center;">
+                <div style="font-size:50px;margin-bottom:8px;">✅</div>
+                <h2 style="color:var(--primary);">Purchase Complete!</h2>
+                <div class="receipt-box">
+                    <div class="receipt-item-name" id="receipt-item">–</div>
+                    <div class="receipt-total">- RM <span id="receipt-price">0.00</span></div>
+                    <hr style="border:none;border-top:1px dashed var(--border);margin:12px 0;">
+                    <p style="font-size:14px;color:var(--text-light);">Remaining Balance</p>
+                    <p style="font-size:22px;font-weight:800;color:var(--primary);">RM <span id="receipt-bal">0.00</span></p>
+                </div>
+                <button onclick="resetUnlockView()" style="background:var(--primary);">🏠 Return to Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== HISTORY VIEW ====== -->
+    <div id="history-view" class="view" style="padding:0;">
+        <div class="app-bar">
+            <button class="back-btn-bar" onclick="switchView('home-view')">←</button>
+            <h1>Transaction History</h1>
+        </div>
+        <div style="padding:20px;">
+            <button onclick="showLastReceipt()" class="btn-outline btn-sm" style="width:100%;margin-bottom:14px;">🧾 View Last Receipt</button>
+            <div id="history-list">
+                <div class="loader"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAYMENT MODAL -->
+    <div id="payment-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div style="background:#004eb1;color:white;padding:12px;border-radius:8px;font-weight:800;font-size:18px;margin-bottom:16px;">Touch 'n Go eWallet</div>
+            <h3 id="modal-title">Waiting for Authorization…</h3>
+            <p id="modal-desc" style="color:var(--text-light);font-size:14px;margin:8px 0;">Authorizing payment of <strong>RM <span id="modal-amount">0.00</span></strong></p>
+            <div id="modal-loader" class="loader"></div>
+            <button id="close-modal-btn" style="display:none;background:var(--primary);margin-top:12px;">Back to Dashboard</button>
+        </div>
+    </div>
+
+    <!-- NEGATIVE BALANCE MODAL -->
+    <div id="negative-balance-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div style="font-size:40px;margin-bottom:6px;">⚠️</div>
+            <h3 style="color:var(--danger);">Insufficient Funds</h3>
+            <p style="color:var(--text-light);font-size:14px;margin:8px 0;">Items taken: <strong id="negative-items-display"></strong></p>
+            <div style="font-size:30px;font-weight:800;color:var(--danger);margin:6px 0;">- RM <span id="negative-amount-display">0.00</span></div>
+            <p style="font-size:13px;color:var(--danger);font-weight:600;margin:10px 0;">Failure to clear this debt will be reported to UTM Administration.</p>
+            <p style="font-size:13px;color:var(--text-light);">Auto-action in: <span id="reload-countdown" style="font-weight:800;color:var(--danger);">5:00</span></p>
+            <button id="force-reload-btn" style="background:var(--danger);margin-top:14px;">Reload Balance Now</button>
+        </div>
+    </div>
+
+<!-- LAST RECEIPT MODAL -->
+<div id="receipt-modal" class="modal-overlay">
+    <div class="modal-box">
+        <div style="font-size:34px;">🧾</div>
+        <h3 style="margin-bottom:2px;">Last Receipt</h3>
+        <p class="text-muted" id="lr-date" style="margin-bottom:12px;">–</p>
+        <div class="receipt-box" style="background:var(--primary-light);">
+            <div class="receipt-item-name" id="lr-item">–</div>
+            <div class="receipt-total" id="lr-total" style="color:var(--primary);">- RM 0.00</div>
+            <hr style="border:none;border-top:1px dashed var(--border);margin:12px 0;">
+            <p style="font-size:13px;color:var(--text-light);">Balance after</p>
+            <p style="font-size:20px;font-weight:800;color:var(--primary);" id="lr-bal">RM 0.00</p>
+            <p class="text-muted" id="lr-machine" style="margin-top:8px;font-size:12px;">–</p>
+        </div>
+        <button onclick="document.getElementById('receipt-modal').style.display='none'" style="background:var(--primary);">Close</button>
+    </div>
+</div>
+
+<!-- NATIVE-FEEL CONFIRM DIALOG -->
+<div id="app-dialog-overlay" class="app-dialog-overlay">
+    <div class="app-dialog">
+        <div class="ad-icon" id="ad-icon">❓</div>
+        <h3 id="ad-title">Are you sure?</h3>
+        <p id="ad-msg"></p>
+        <div class="ad-actions">
+            <button id="ad-cancel" class="ad-btn-cancel">Cancel</button>
+            <button id="ad-confirm" class="btn-danger">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<!-- TOAST HOST -->
+<div id="toast-host"></div>
+
+</div><!-- /app-shell -->
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendEmailVerification, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getDatabase, ref, onValue, set, get, push, update, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCMNKH5ES47w4ywhm-0eykbWNA0ZrU7V-I",
+        authDomain: "idp-vending-machine.firebaseapp.com",
+        databaseURL: "https://idp-vending-machine-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "idp-vending-machine",
+        storageBucket: "idp-vending-machine.firebasestorage.app",
+        messagingSenderId: "736954625793",
+        appId: "1:736954625793:web:d8985578b01ae2c5f6f500"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    let currentUserUID = null;
+    let activeUserBalance = 0;
+    let currentUserData = {};
+    window.currentMachineID = "Machine 1";
+    const machinePath = () => `vendingMachine/machines/${window.currentMachineID}`;
+
+    let inventoryUnsub = null;
+    window.dynamicConfig = {};
+
+    // ---------- TOAST (non-blocking feedback) ----------
+    window.showToast = function (msg, type = 'info', ms = 2600) {
+        const host = document.getElementById('toast-host');
+        if (!host) return;
+        const el = document.createElement('div');
+        el.className = 'toast ' + type;
+        el.textContent = msg;
+        host.appendChild(el);
+        requestAnimationFrame(() => el.classList.add('show'));
+        setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 260); }, ms);
+    };
+
+    // ---------- PASSWORD SHOW / HIDE ----------
+    window.togglePassword = function () {
+        const inp = document.getElementById('password');
+        const ic = document.getElementById('pw-toggle');
+        if (!inp) return;
+        const show = inp.type === 'password';
+        inp.type = show ? 'text' : 'password';
+        if (ic) ic.textContent = show ? '🙈' : '👁';
+    };
+
+    // ---------- HAPTIC FEEDBACK (phones only; harmless no-op on desktop) ----------
+    window.buzz = function (pattern) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {} };
+
+    // ---------- NATIVE-FEEL CONFIRM (replaces browser confirm — app, not webpage) ----------
+    window.appConfirm = function (opts) {
+        const o = Object.assign({ icon: '❓', title: 'Are you sure?', message: '', confirmText: 'Confirm', danger: true, onConfirm: () => {} }, opts);
+        const ov = document.getElementById('app-dialog-overlay');
+        document.getElementById('ad-icon').textContent = o.icon;
+        document.getElementById('ad-title').textContent = o.title;
+        document.getElementById('ad-msg').textContent = o.message;
+        const cbtn = document.getElementById('ad-confirm');
+        cbtn.textContent = o.confirmText;
+        cbtn.className = o.danger ? 'btn-danger' : '';
+        const close = () => { ov.classList.remove('show'); };
+        cbtn.onclick = () => { close(); buzz(30); o.onConfirm(); };
+        document.getElementById('ad-cancel').onclick = close;
+        ov.onclick = (e) => { if (e.target === ov) close(); };
+        ov.classList.add('show');
+    };
+
+    // ---------- PWA: register service worker so the app is installable ----------
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    // ---------- LAST RECEIPT (re-viewable, stored per-device) ----------
+    window.showLastReceipt = function () {
+        let r = null;
+        try { r = JSON.parse(localStorage.getItem('lastReceipt') || 'null'); } catch (e) { r = null; }
+        if (!r) { showToast('No recent receipt found yet.', 'info'); return; }
+        document.getElementById('lr-item').innerText = r.item || '–';
+        document.getElementById('lr-total').innerText = '- RM ' + Number(r.cost || 0).toFixed(2);
+        document.getElementById('lr-bal').innerText = 'RM ' + Number(r.bal || 0).toFixed(2);
+        document.getElementById('lr-date').innerText = r.ts ? new Date(r.ts).toLocaleString('en-MY') : '';
+        document.getElementById('lr-machine').innerText = r.machine ? ('📍 ' + r.machine) : '';
+        document.getElementById('receipt-modal').style.display = 'flex';
+    };
+
+    // ---------- DEBT LOCKDOWN ----------
+    // A negative balance means the student took more than they paid for. Until
+    // they clear it, they can ONLY use the top-up page — every login, every view.
+    window.debtLock = false;
+    function enterDebtLock(bal) {
+        const wasLocked = window.debtLock;
+        window.debtLock = true;
+        const banner = document.getElementById('debt-banner');
+        const amt = document.getElementById('debt-amount');
+        if (amt) amt.innerText = Math.abs(bal).toFixed(2);
+        if (banner) banner.style.display = 'block';
+        // Force the student onto the top-up page if they're anywhere else.
+        const active = document.querySelector('.view.active-view');
+        if (!active || active.id !== 'topup-view') switchView('topup-view');
+        if (!wasLocked) showToast('You owe RM ' + Math.abs(bal).toFixed(2) + ' — top up to continue.', 'error', 3500);
+    }
+    function exitDebtLock() {
+        if (!window.debtLock) return;          // only act on the negative→cleared transition
+        window.debtLock = false;
+        const banner = document.getElementById('debt-banner');
+        if (banner) banner.style.display = 'none';
+        if (currentUserData && currentUserData.debt) set(ref(db, `users/${currentUserUID}/debt`), null).catch(() => {});
+        showToast('Balance cleared — full access restored. ✅', 'success');
+    }
+    window.debtLogout = function () { signOut(auth); };
+
+    // ---------- MACHINE LISTENERS ----------
+    function attachMachineListeners() {
+        if (inventoryUnsub) inventoryUnsub();
+        window.dynamicConfig = {};
+        const invDiv = document.getElementById('dedicated-inventory-list');
+        if (invDiv) invDiv.innerHTML = '<div class="loader"></div>';
+        inventoryUnsub = onValue(ref(db, `${machinePath()}/inventory`), (snapshot) => {
+            const cleaned = {};
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                for (const key in data) {
+                    if (key.startsWith('s') && typeof data[key] === 'object') cleaned[key] = data[key];
+                }
+            }
+            window.dynamicConfig = cleaned;
+            window.renderStudentInventory();
+        });
+
+        // Live machine status on buy screen (driven by phase + online heartbeat)
+        onValue(ref(db, `${machinePath()}/state/phase`), snap => {
+            window.machinePhase = snap.val() || "locked";
+            updateMachineStatusUI();
+        });
+        // Server-clock offset, so freshness is judged against SERVER time, not the
+        // phone's possibly-wrong clock.
+        if (!window._svOffsetSub) {
+            window._svOffsetSub = true;
+            onValue(ref(db, '.info/serverTimeOffset'), s => { window.serverTimeOffset = s.val() || 0; evalMachineOnline(); });
+            // Track OUR connection to Firebase. If the phone drops connection, the
+            // heartbeat stops updating locally — that's our fault, not the machine's.
+            onValue(ref(db, '.info/connected'), s => { window.fbConnected = (s.val() === true); evalMachineOnline(); });
+        }
+        // Heartbeat: the ESP32 writes state/heartbeat (a server timestamp) every ~10s.
+        // Online = that value is younger than 30s of server time. A shut-down ESP32
+        // stops writing, so the value goes stale and we flip offline immediately —
+        // even right on page load (no false "online" window).
+        onValue(ref(db, `${machinePath()}/state/heartbeat`), snap => {
+            window.lastBeatTs = snap.val() || null;
+            evalMachineOnline();
+        });
+        if (!window._offlineWatch) window._offlineWatch = setInterval(evalMachineOnline, 5000);
+    }
+
+    window.machinePhase = 'locked';
+    // Tri-state: 'unknown' (no heartbeat seen — e.g. older firmware), 'online', 'offline'.
+    // We only ever BLOCK on a confirmed 'offline'; 'unknown' never blocks the door.
+    window.machineState = 'unknown';
+    window.lastBeatTs = null;
+    window.serverTimeOffset = 0;
+    function evalMachineOnline() {
+        // If WE are disconnected from Firebase, we can't judge the machine — stay neutral
+        // (never falsely shout "offline" when it's the phone's own connection that dropped).
+        if (window.fbConnected === false) { window.machineState = 'unknown'; updateMachineStatusUI(); return; }
+        const now = Date.now() + (window.serverTimeOffset || 0);
+        if (window.lastBeatTs == null) window.machineState = 'unknown';
+        else if (now - window.lastBeatTs < 120000) window.machineState = 'online';
+        else window.machineState = 'offline';   // beats were flowing then stopped → really down
+        updateMachineStatusUI();
+    }
+    function updateMachineStatusUI() {
+        const dot = document.querySelector('#mc-buy-status .status-dot-sm');
+        const txt = document.getElementById('mc-buy-status-text');
+        if (!dot || !txt) return;
+        if (window.machineState === 'offline') {
+            dot.className = 'status-dot-sm offline';
+            txt.textContent = '📵 Offline — machine not responding';
+            return;
+        }
+        const phase = window.machinePhase || 'locked';
+        const busy = ['preparing','unlocked','user_taking','checkout_processing','checkout_done','reminder_open_door'].includes(phase);
+        const restock = phase.startsWith('restock');
+        dot.className = 'status-dot-sm' + (busy || restock ? ' busy' : '');
+        txt.textContent = busy ? 'Busy — another session in progress'
+                       : restock ? 'Being restocked — check back soon'
+                       : 'Available — tap to unlock';
+    }
+
+    window.selectMachine = function (machineId, nextView) {
+        window.currentMachineID = machineId;
+        const titleEl = document.getElementById('inv-machine-title');
+        if (titleEl) titleEl.innerText = machineId;
+        attachMachineListeners();
+        switchView(nextView);
+    };
+
+    window.switchView = function (viewId) {
+        // Debt lockdown: a student who owes money can ONLY reach the top-up page.
+        if (window.debtLock && viewId !== 'topup-view') {
+            showToast('Clear your outstanding balance to continue.', 'error');
+            viewId = 'topup-view';
+        } else if (activeUserBalance < 0 && (viewId === 'buy-view' || viewId === 'unlock-view')) {
+            showToast('Negative balance — please top up before buying.', 'error');
+            viewId = 'topup-view';
+        }
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
+        const t = document.getElementById(viewId);
+        if (t) t.classList.add('active-view');
+    };
+
+    // ---------- AUTH MODE ----------
+    function setAuthMode(mode) {
+        const isSignup = mode === 'signup';
+        document.getElementById('fullname').style.display = isSignup ? 'block' : 'none';
+        document.getElementById('signup-btn').style.display = isSignup ? 'block' : 'none';
+        document.getElementById('login-btn').style.display = isSignup ? 'none' : 'block';
+        document.getElementById('tab-login').className = 'auth-tab' + (isSignup ? '' : ' active');
+        document.getElementById('tab-signup').className = 'auth-tab' + (isSignup ? ' active' : '');
+        document.getElementById('auth-error').innerText = '';
+        document.getElementById('auth-subtitle').innerText = isSignup
+            ? 'Use your @graduate.utm.my email to register.'
+            : '';
+    }
+    window.setAuthMode = setAuthMode;
+
+    document.getElementById('signup-btn').addEventListener('click', () => {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const fullname = document.getElementById('fullname').value.trim();
+        const err = document.getElementById('auth-error');
+        err.innerText = ""; err.style.color = 'var(--danger)';
+        if (!email.endsWith("@graduate.utm.my")) { err.innerText = "Use your @graduate.utm.my email."; return; }
+        if (password.length < 6) { err.innerText = "Password must be at least 6 characters."; return; }
+        if (!fullname) { err.innerText = "Please enter your full name."; return; }
+        createUserWithEmailAndPassword(auth, email, password).then((cred) => {
+            sendEmailVerification(cred.user).then(() => {
+                set(ref(db, 'users/' + cred.user.uid), { balance: 0.00, email, fullname });
+                err.style.color = 'green';
+                err.innerText = "Account created! Check your UTM email to verify before logging in.";
+                signOut(auth);
+            });
+        }).catch(e => { err.innerText = e.message; });
+    });
+
+    document.getElementById('login-btn').addEventListener('click', () => {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const err = document.getElementById('auth-error');
+        err.innerText = "";
+        signInWithEmailAndPassword(auth, email, password).then(cred => {
+            if (!cred.user.emailVerified) { err.innerText = "Please verify your email first."; signOut(auth); }
+        }).catch(() => { err.innerText = "Invalid email or password."; });
+    });
+
+    document.getElementById('forgot-password-link').addEventListener('click', e => {
+        e.preventDefault();
+        const email = document.getElementById('email').value.trim();
+        const err = document.getElementById('auth-error');
+        err.innerText = "";
+        if (!email) { err.style.color = 'red'; err.innerText = "Enter your email first."; return; }
+        sendPasswordResetEmail(auth, email)
+            .then(() => { err.style.color = 'green'; err.innerText = "Password reset email sent!"; })
+            .catch(e2 => { err.style.color = 'red'; err.innerText = e2.message; });
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+        appConfirm({
+            icon: '🚪', title: 'Log Out',
+            message: 'Are you sure you want to log out of Campus VendIQ?',
+            confirmText: 'Log Out',
+            onConfirm: () => signOut(auth)
+        });
+    });
+
+    onAuthStateChanged(auth, user => {
+        if (user && user.emailVerified) {
+            currentUserUID = user.uid;
+            switchView('home-view');
+            listenToUserData();
+        } else {
+            currentUserUID = null;
+            setAuthMode('login');
+            switchView('login-view');
+        }
+        // Reveal the app only after auth is resolved → no flash of the login page
+        // when arriving already signed-in from the combined login (app.html).
+        const sp = document.getElementById('splash');
+        if (sp) setTimeout(() => sp.classList.add('hide'), 150);
+    });
+    // Safety: never leave the splash up forever if auth is slow or unreachable.
+    setTimeout(() => document.getElementById('splash')?.classList.add('hide'), 4500);
+
+    // ---------- PROFILE ----------
+    window.saveFullName = function () {
+        const name = document.getElementById('edit-name-input').value.trim();
+        const msg = document.getElementById('edit-name-msg');
+        if (!name) { msg.style.color = 'var(--danger)'; msg.innerText = 'Enter a name.'; return; }
+        update(ref(db, `users/${currentUserUID}`), { fullname: name }).then(() => {
+            msg.style.color = 'var(--primary)'; msg.innerText = '✅ Name updated!';
+        }).catch(e => { msg.style.color = 'var(--danger)'; msg.innerText = 'Failed: ' + e.message; });
+    };
+
+    window.sendPasswordReset = function () {
+        if (!auth.currentUser) return;
+        sendPasswordResetEmail(auth, auth.currentUser.email)
+            .then(() => showToast('Reset email sent to ' + auth.currentUser.email, 'success', 3200))
+            .catch(e => showToast('Error: ' + e.message, 'error'));
+    };
+
+    // ---------- INVENTORY RENDER ----------
+    window.renderStudentInventory = function () {
+        const div = document.getElementById('dedicated-inventory-list');
+        if (!div) return;
+        div.innerHTML = "";
+        const keys = Object.keys(window.dynamicConfig || {}).sort();
+        let shown = 0;
+        keys.forEach(k => {
+            const c = window.dynamicConfig[k];
+            if (!c) return;
+            if (c.en !== undefined && parseInt(c.en) === 0) return;
+            const name = c.name || "";
+            if (!name) return;
+            const qty = c.qty !== undefined ? parseInt(c.qty) : 0;
+            const max = c.max !== undefined ? parseInt(c.max) : 0;
+            const price = c.price !== undefined ? parseFloat(c.price) : 0;
+            const oos = qty === 0;
+            const pct = max > 0 ? Math.min(100, Math.round(qty / max * 100)) : (oos ? 0 : 100);
+            const barCls = oos ? 'out' : (max > 0 && qty <= max * 0.34 ? 'low' : '');
+            // Affordability uses the already-loaded balance — no extra Firebase call.
+            const affordTag = oos ? '' :
+                (activeUserBalance >= price
+                    ? `<div class="afford-tag afford-yes">✓ You can afford this</div>`
+                    : `<div class="afford-tag afford-no">Top up RM ${(price - activeUserBalance).toFixed(2)} more to buy</div>`);
+            div.innerHTML += `
+                <div class="inv-item ${oos ? 'out-of-stock' : ''}" style="flex-direction:column;align-items:stretch;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div>
+                            <strong style="font-size:16px;">${name}</strong>
+                            <div style="color:var(--text-light);font-size:13px;margin-top:2px;">RM ${price.toFixed(2)}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <span style="font-size:22px;font-weight:800;color:${oos ? 'var(--danger)' : 'var(--primary)'};">${qty}</span>
+                            <div style="font-size:11px;color:var(--text-light);">${oos ? 'Out of stock' : 'in stock'}</div>
+                        </div>
+                    </div>
+                    <div class="stock-bar-wrap"><div class="stock-bar ${barCls}" style="width:${pct}%"></div></div>
+                    ${affordTag}
+                </div>`;
+            shown++;
+        });
+        if (shown === 0) div.innerHTML = "<p class='text-muted' style='text-align:center;padding:20px;'>No items available right now.</p>";
+    };
+
+    function cheapestAvailablePrice() {
+        let min = Infinity;
+        Object.values(window.dynamicConfig || {}).forEach(c => {
+            if (!c || !c.name) return;
+            if (c.en !== undefined && parseInt(c.en) === 0) return;
+            const qty = c.qty !== undefined ? parseInt(c.qty) : 0;
+            const price = c.price !== undefined ? parseFloat(c.price) : 0;
+            if (qty > 0 && price > 0 && price < min) min = price;
+        });
+        return min === Infinity ? null : min;
+    }
+
+    function listenToUserData() {
+        attachMachineListeners();
+
+        onValue(ref(db, 'users/' + currentUserUID), snap => {
+            currentUserData = snap.val() || {};
+            const name = currentUserData.fullname || '';
+            const email = currentUserData.email || '';
+            if (document.getElementById('welcome-name')) {
+                const h = new Date().getHours();
+                const greet = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+                const first = name ? name.split(' ')[0] : '';
+                document.getElementById('welcome-name').innerText = first ? `${greet}, ${first}! 👋` : `${greet}! 👋`;
+            }
+            if (document.getElementById('profile-name-display')) document.getElementById('profile-name-display').innerText = name || '(no name)';
+            if (document.getElementById('profile-email-display')) document.getElementById('profile-email-display').innerText = email;
+            if (document.getElementById('pir-name')) document.getElementById('pir-name').innerText = name || '–';
+            if (document.getElementById('pir-email')) document.getElementById('pir-email').innerText = email || '–';
+            if (document.getElementById('edit-name-input') && !document.getElementById('edit-name-input').value) document.getElementById('edit-name-input').value = name;
+        });
+
+        onValue(ref(db, 'users/' + currentUserUID + '/balance'), snap => {
+            activeUserBalance = parseFloat(snap.val() || 0);
+            const f = activeUserBalance.toFixed(2);
+            if (document.getElementById('user-balance')) document.getElementById('user-balance').innerText = f;
+            if (document.getElementById('current-balance-display')) document.getElementById('current-balance-display').innerText = f;
+            if (document.getElementById('unlock-balance')) document.getElementById('unlock-balance').innerText = f;
+            if (document.getElementById('pir-balance')) document.getElementById('pir-balance').innerText = 'RM ' + f;
+
+            const statusText = document.getElementById('balance-status-text');
+            if (statusText) {
+                if (activeUserBalance < 0) statusText.innerText = '⚠️ Negative balance — top up before buying';
+                else if (activeUserBalance === 0) statusText.innerText = 'Add balance to start buying';
+                else statusText.innerText = 'Ready to vend';
+            }
+
+            // Refresh affordability hints with the new balance (local re-render, no DB read).
+            if (window.renderStudentInventory) window.renderStudentInventory();
+
+            // Debt lockdown: negative balance = took more than paid → top-up only.
+            if (activeUserBalance < 0) enterDebtLock(activeUserBalance);
+            else exitDebtLock();
+
+            const warnVisible = document.getElementById('negative-balance-modal').style.display === 'flex';
+            if (activeUserBalance < 0 && !warnVisible) {
+                const t = document.getElementById('topup-amount');
+                if (!t.value || parseFloat(t.value) < Math.abs(activeUserBalance)) t.value = Math.abs(activeUserBalance).toFixed(2);
+            }
+        });
+
+        onValue(ref(db, 'users/' + currentUserUID + '/history'), snap => {
+            const list = document.getElementById('history-list');
+            list.innerHTML = "";
+            if (!snap.exists()) { list.innerHTML = "<p class='text-muted' style='text-align:center;padding:20px;'>No transactions yet.</p>"; return; }
+            let items = []; snap.forEach(c => { items.push(c.val()); }); items.reverse();
+            const totalCount = items.length;
+            items = items.slice(0, 10);   // user view: only the 10 most recent
+            items.forEach(d => {
+                const dateStr = new Date(d.timestamp).toLocaleString('en-MY');
+                const isTopup = d.type === 'topup';
+                const priceStr = isTopup ? `+ RM ${parseFloat(d.amount || 0).toFixed(2)}` : `- RM ${parseFloat(d.cost || 0).toFixed(2)}`;
+                const badgeColor = isTopup ? 'var(--primary)' : 'var(--danger)';
+                const machineInfo = d.machine ? ` · ${d.machine}` : (!isTopup ? ' · Machine 1' : "");
+                list.innerHTML += `
+                    <div class="history-item">
+                        <div class="hi-top">
+                            <span class="hi-name">${d.item}</span>
+                            <span class="badge" style="background:${badgeColor};flex-shrink:0;">${priceStr}</span>
+                        </div>
+                        <div class="hi-meta">${dateStr}${machineInfo} · Bal after: RM ${parseFloat(d.balanceAfter || 0).toFixed(2)}</div>
+                    </div>`;
+            });
+            if (totalCount > 10) {
+                list.innerHTML += `<p class='text-muted' style='text-align:center;padding:12px 0;font-size:12px;'>Showing your 10 most recent of ${totalCount} transactions.</p>`;
+            }
+        });
+    }
+
+    // ---------- STEP INDICATOR HELPERS ----------
+    function setStep(n) {
+        [1,2,3].forEach(i => {
+            document.getElementById(`step${i}`).className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+        });
+        if (document.getElementById('step-line-1')) document.getElementById('step-line-1').className = 'step-line' + (n > 1 ? ' done' : '');
+        if (document.getElementById('step-line-2')) document.getElementById('step-line-2').className = 'step-line' + (n > 2 ? ' done' : '');
+    }
+
+    function setSimUI(phase) {
+        const title = document.getElementById('sim-title');
+        const desc = document.getElementById('sim-desc');
+        const hint = document.getElementById('sim-hint');
+        const loader = document.getElementById('sim-loader');
+        if (!title) return;
+        const upd = (c, t, d, h) => {
+            title.style.color = c; if (loader) loader.style.borderTopColor = c;
+            title.innerText = t; desc.innerText = d; hint.innerText = h;
+        };
+        if (phase === 'preparing') {
+            setStep(2);
+            upd('var(--accent)', 'Preparing…', 'Taking a photo and reading the trays before unlocking.', 'Please wait a moment — almost ready!');
+        } else if (phase === 'unlocked') {
+            setStep(2);
+            upd('var(--warning)', 'Door Unlocked! 🔓', 'Open the door and take your items, then close it securely.', 'The machine is weighing the trays in real time.');
+            buzz(220);   // strong single pulse: the door just unlocked
+        } else if (phase === 'user_taking') {
+            setStep(2);
+            upd('var(--warning)', 'Take your items 🤲', 'Take what you need, then push the door closed firmly.', 'The machine is weighing the trays in real time.');
+        } else if (phase === 'reminder_open_door') {
+            setStep(2);
+            upd('var(--warning)', 'Please open the door!', 'The door was unlocked but you have not opened it yet.', 'If you do not open it soon, the session will close with no items.');
+        } else if (phase.indexOf('checkout') === 0) {
+            setStep(3);
+            upd('var(--accent)', 'Calculating…', 'Weighing what you took and preparing your receipt.', 'Almost done — please wait.');
+        } else if (phase === 'restocking_busy') {
+            upd('var(--danger)', 'Machine Busy', 'Admin is restocking right now.', 'Returning to menu…');
+            setTimeout(() => { if (window.phaseUnsub) window.phaseUnsub(); resetUnlockView(false); }, 2500);
+        }
+    }
+
+    // ---------- UNLOCK + CHECKOUT ----------
+    document.getElementById('unlock-door-btn').addEventListener('click', async () => {
+        const errorMsg = document.getElementById('unlock-error');
+        errorMsg.innerText = "";
+        const base = machinePath();
+
+        if (window.machineState === 'offline') {
+            errorMsg.innerText = "📵 Machine is offline right now. Please try again shortly.";
+            return;
+        }
+
+        try {
+            const phaseSnap = await get(ref(db, `${base}/state/phase`));
+            const ph = phaseSnap.val() || "";
+            if (ph === 'restocking' || ph === 'restock_open' || ph === 'restocking_busy') {
+                errorMsg.innerText = "🔧 Admin is restocking. Please wait a moment and try again.";
+                return;
+            }
+            if (ph === 'preparing' || ph === 'unlocked' || ph === 'user_taking' || ph.indexOf('checkout') === 0 || ph === 'reminder_open_door') {
+                errorMsg.innerText = "⏳ The machine is busy with another session. Please wait.";
+                return;
+            }
+        } catch (e) { /* fall through */ }
+
+        const minPrice = cheapestAvailablePrice();
+        if (minPrice === null) { errorMsg.innerText = "No items available right now."; return; }
+        if (activeUserBalance < minPrice) {
+            errorMsg.innerText = `Insufficient balance. You need at least RM ${minPrice.toFixed(2)} to unlock.`;
+            return;
+        }
+
+        // Concurrency lock: claim the machine so two students can't unlock at once.
+        // The lock auto-expires after 60s in case a browser crashes mid-session.
+        try {
+            const tx = await runTransaction(ref(db, `${base}/control/web_lock`), (cur) => {
+                const now = Date.now();
+                if (cur && cur.uid && cur.uid !== currentUserUID && (now - (cur.ts || 0) < 60000)) return; // held by someone else
+                return { uid: currentUserUID, ts: now };
+            });
+            if (!tx.committed) {
+                errorMsg.innerText = "⏳ Another student is using this machine. Please wait a moment.";
+                return;
+            }
+        } catch (e) { /* if the lock check itself fails, don't block the sale */ }
+
+        document.getElementById('unlock-phase').style.display = 'none';
+        document.getElementById('unlock-app-bar').style.display = 'none';
+        document.getElementById('hardware-sim-phase').style.display = 'block';
+        setStep(2);
+        setSimUI('preparing');
+
+        const sessionId = 'S' + Date.now();
+
+        Promise.all([
+            set(ref(db, `${base}/user/uid`), currentUserUID),
+            set(ref(db, `${base}/user/email`), auth.currentUser.email),
+            set(ref(db, `${base}/user/session`), sessionId),
+            set(ref(db, `${base}/checkout/session`), sessionId),
+            set(ref(db, `${base}/checkout/status`), "processing"),
+            set(ref(db, `${base}/control/affordable`), 1)
+        ]).then(() => {
+            return set(ref(db, `${base}/control/unlock`), 1);
+        }).then(() => {
+            const phaseRef = ref(db, `${base}/state/phase`);
+            window.phaseUnsub = onValue(phaseRef, snap => { setSimUI(snap.val() || ""); });
+
+            const coRef = ref(db, `${base}/checkout`);
+            const unsub = onValue(coRef, snap => {
+                if (!snap.exists()) return;
+                const co = snap.val();
+                if (co.status === "done" && co.session === sessionId) {
+                    unsub();
+                    if (window.phaseUnsub) window.phaseUnsub();
+                    settleCheckout(co, sessionId, base);
+                }
+            });
+        });
+    });
+
+    function settleCheckout(co, sessionId, base) {
+        const slots = co.slot || {};
+        let parts = [], totalCost = 0, suspicious = false;
+        Object.keys(slots).sort().forEach(k => {
+            const s = slots[k] || {};
+            const qty = parseInt(s.qty || 0);
+            const price = parseFloat(s.price || 0);
+            const name = s.name || k;
+            if (qty > 0) { parts.push(`${qty}x ${name}`); totalCost += qty * price; }
+            const delta = Math.abs(parseInt(s.delta_raw || 0));
+            const expected = Math.abs(parseInt(s.expected_raw || 0));
+            if (expected > 0) { if (Math.abs(delta - expected) > expected * 0.35) suspicious = true; }
+            else if (delta > 3000) suspicious = true;
+        });
+        if (parts.length === 0 && co.items && co.items !== "") {
+            parts = [co.items]; totalCost = parseFloat(co.total || 0);
+        }
+        const description = parts.length ? parts.join(", ") : "No items taken";
+        totalCost = Math.round(totalCost * 100) / 100;
+        const newBalance = activeUserBalance - totalCost;
+
+        set(ref(db, 'users/' + currentUserUID + '/balance'), newBalance);
+        const h = push(ref(db, 'users/' + currentUserUID + '/history'));
+        set(h, { item: description, cost: totalCost, balanceAfter: newBalance, machine: window.currentMachineID, timestamp: Date.now() });
+
+        const p = push(ref(db, `${base}/purchases`));
+        set(p, {
+            session: sessionId, uid: currentUserUID, email: auth.currentUser.email,
+            items: description, total: totalCost, balanceAfter: newBalance,
+            before_url: co.before_url || "", after_url: co.after_url || co.img || "",
+            slots, ai_verify: co.ai_verify || "pending", flagged: suspicious, resolved: false, timestamp: Date.now()
+        });
+
+        set(ref(db, `${base}/control/affordable`), 0);
+        releaseWebLock();
+
+        // Save for "View Last Receipt" (per-device, instant re-view).
+        try {
+            localStorage.setItem('lastReceipt', JSON.stringify({
+                item: description, cost: totalCost, bal: newBalance,
+                ts: Date.now(), machine: window.currentMachineID
+            }));
+        } catch (e) {}
+
+        setStep(3);
+        buzz([90, 60, 90]);   // double pulse: purchase complete, receipt ready
+        document.getElementById('hardware-sim-phase').style.display = 'none';
+        document.getElementById('receipt-phase').style.display = 'block';
+        document.getElementById('receipt-item').innerText = description;
+        document.getElementById('receipt-price').innerText = totalCost.toFixed(2);
+        document.getElementById('receipt-bal').innerText = newBalance.toFixed(2);
+
+        if (newBalance < 0) {
+            // Persist debt evidence (photos + details) immediately — survives even if
+            // the student closes the browser during the 5-minute grace period.
+            set(ref(db, `users/${currentUserUID}/debt`), {
+                amount: Math.round(Math.abs(newBalance) * 100) / 100,
+                items: description,
+                before_url: co.before_url || "",
+                after_url: co.after_url || co.img || "",
+                machine: window.currentMachineID,
+                email: auth.currentUser.email,
+                since: Date.now()
+            });
+            startTopupWindow(newBalance, description, base);
+        }
+    }
+
+    function startTopupWindow(newBalance, description, base) {
+        document.getElementById('negative-amount-display').innerText = Math.abs(newBalance).toFixed(2);
+        document.getElementById('negative-items-display').innerText = description;
+        document.getElementById('negative-balance-modal').style.display = 'flex';
+
+        let timeLeft = 300;
+        const show = s => {
+            const m = Math.floor(s / 60), ss = s % 60;
+            document.getElementById('reload-countdown').innerText = `${m}:${ss < 10 ? '0' : ''}${ss}`;
+        };
+        show(timeLeft);
+        if (window.warningTimer) clearInterval(window.warningTimer);
+
+        window.warningTimer = setInterval(() => {
+            if (activeUserBalance >= 0) { clearInterval(window.warningTimer); document.getElementById('negative-balance-modal').style.display = 'none'; return; }
+            timeLeft--; show(timeLeft);
+            if (timeLeft <= 0) {
+                clearInterval(window.warningTimer);
+                document.getElementById('negative-balance-modal').style.display = 'none';
+                // Grace period over → flag the debt so it surfaces in the admin
+                // "Unpaid Debts" section (with the before/after photos already stored).
+                update(ref(db, `users/${currentUserUID}/debt`), { reported: true, reportedAt: Date.now() });
+                resetUnlockView(true);
+                document.getElementById('topup-amount').value = Math.abs(newBalance).toFixed(2);
+                switchView('topup-view');
+            }
+        }, 1000);
+
+        document.getElementById('force-reload-btn').onclick = () => {
+            clearInterval(window.warningTimer);
+            document.getElementById('negative-balance-modal').style.display = 'none';
+            resetUnlockView(true);
+            document.getElementById('topup-amount').value = Math.abs(newBalance).toFixed(2);
+            switchView('topup-view');
+        };
+    }
+
+    // Release our machine lock — only if WE hold it (never clear someone else's).
+    function releaseWebLock() {
+        const base = machinePath();
+        runTransaction(ref(db, `${base}/control/web_lock`), (cur) => {
+            if (cur && cur.uid === currentUserUID) return null; // our lock -> clear
+            return undefined;                                   // not ours -> leave untouched
+        }).catch(() => {});
+    }
+    window.releaseWebLock = releaseWebLock;
+
+    window.resetUnlockView = function (preventSwitch = false) {
+        releaseWebLock();
+        document.getElementById('unlock-phase').style.display = 'block';
+        document.getElementById('unlock-app-bar').style.display = 'flex';
+        document.getElementById('hardware-sim-phase').style.display = 'none';
+        document.getElementById('receipt-phase').style.display = 'none';
+        document.getElementById('unlock-error').innerText = "";
+        setStep(1);
+        if (!preventSwitch) switchView('home-view');
+    };
+
+    // ---------- TOP-UP ----------
+    window.setTopupAmount = function (amt) { document.getElementById('topup-amount').value = amt; };
+
+    const payBtn = document.getElementById('pay-tng-btn');
+    const modal = document.getElementById('payment-modal');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    let amountToAdd = 0;
+
+    payBtn.addEventListener('click', () => {
+        const t = document.getElementById('topup-amount');
+        amountToAdd = parseFloat(t.value);
+        const msg = document.getElementById('topup-msg');
+        if (isNaN(amountToAdd) || amountToAdd <= 0) { msg.innerText = "Please enter a valid amount."; return; }
+        if (activeUserBalance < 0 && amountToAdd < Math.abs(activeUserBalance)) {
+            msg.innerText = `Please enter at least RM ${Math.abs(activeUserBalance).toFixed(2)} to clear your debt.`;
+            return;
+        }
+        // Capture the UID NOW (not 3.5s later). If auth blips during the delay,
+        // currentUserUID could become null and the top-up would land on users/null.
+        const uid = currentUserUID || (auth.currentUser && auth.currentUser.uid);
+        if (!uid) { msg.innerText = "Session expired — please log in again."; return; }
+
+        msg.innerText = "";
+        document.getElementById('modal-amount').innerText = amountToAdd.toFixed(2);
+        document.getElementById('modal-title').innerText = "Waiting for Authorization…";
+        document.getElementById('modal-loader').style.display = "block";
+        closeModalBtn.style.display = "none";
+        modal.style.display = "flex";
+
+        setTimeout(() => {
+            const balRef = ref(db, 'users/' + uid + '/balance');
+            get(balRef).then(snap => {
+                const cur = parseFloat(snap.val() || 0);
+                set(balRef, cur + amountToAdd).then(() => {
+                    const h = push(ref(db, 'users/' + uid + '/history'));
+                    set(h, { item: "Account Top-Up", amount: amountToAdd, balanceAfter: cur + amountToAdd, timestamp: Date.now(), type: "topup" });
+                    get(ref(db, 'vendingMachine/securityAlerts')).then(s => {
+                        if (s.exists()) s.forEach(c => {
+                            const d = c.val();
+                            if (d.uid === uid && !d.resolved)
+                                set(ref(db, `vendingMachine/securityAlerts/${c.key}/resolved`), true);
+                        });
+                    });
+                    document.getElementById('modal-title').innerText = "Payment Successful! ✅";
+                    document.getElementById('modal-loader').style.display = "none";
+                    closeModalBtn.style.display = "block";
+                    t.value = '';
+                });
+            });
+        }, 3500);
+    });
+
+    closeModalBtn.addEventListener('click', () => { modal.style.display = "none"; switchView('home-view'); });
+</script>
+</body>
+</html>
