@@ -2,7 +2,7 @@
   "name": "Campus-VendIQ",
   "short_name": "Campus-VendIQ",
   "description": "Campus-VendIQ — cashless smart vending for UTM students. Buy, reload, and track your balance.",
-  "start_url": "index.html",
+  "start_url": "app.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

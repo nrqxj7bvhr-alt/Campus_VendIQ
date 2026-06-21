@@ -140,6 +140,23 @@
         .bbtn-clear:hover { background: #e6ebf2; filter: none; }
         .bbtn-del { background: linear-gradient(135deg,#ef4d5e,#dc2626); color: #fff; }
         .bbtn-del:hover { filter: brightness(96%); }
+        .bbtn-actions { background: var(--primary); color: #fff; }
+        .bbtn-actions:hover { filter: brightness(94%); }
+        /* foldable bulk-actions dropdown */
+        .bulk-menu-wrap { position: relative; }
+        .bulk-menu-wrap > .bbtn { width: 100%; }
+        .bulk-menu { position: absolute; top: calc(100% + 6px); right: 0; min-width: 200px;
+            background: #fff; border: 1px solid var(--border); border-radius: 12px;
+            box-shadow: var(--shadow-lg); padding: 6px; z-index: 60; display: none; }
+        .bulk-menu.open { display: block; animation: bulkMenuIn .14s ease-out; }
+        @keyframes bulkMenuIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
+        .bulk-menu button { width: 100%; margin: 0; padding: 11px 12px; border-radius: 9px; box-shadow: none;
+            background: transparent; color: var(--text); font-size: 13.5px; font-weight: 600; text-align: left;
+            display: flex; align-items: center; gap: 9px; }
+        .bulk-menu button:hover { filter: none; background: var(--primary-light); }
+        .bulk-menu button.danger { color: var(--danger); }
+        .bulk-menu button.danger:hover { background: #fef2f2; }
+        .bulk-menu .bulk-menu-sep { height: 1px; background: var(--border); margin: 5px 4px; }
 
         /* ---- FOLDABLE AI-CHECKER ACTION (purchase review) ---- */
         .ai-menu { margin-top: 12px; }
@@ -502,15 +519,23 @@
             <div class="bulk-bar-top">
                 <div class="bulk-bar-icon">🚨</div>
                 <div>
-                    <div class="bulk-bar-title">Bulk delete alerts</div>
-                    <div class="bulk-bar-sub">Tick alerts, then delete</div>
+                    <div class="bulk-bar-title">Bulk actions</div>
+                    <div class="bulk-bar-sub">Tick alerts, then resolve or delete</div>
                 </div>
                 <span id="security-selected-count" class="bulk-count">0 selected</span>
             </div>
             <div class="bulk-actions">
                 <button type="button" onclick="selectAllSecurityAlerts()" class="bbtn bbtn-sel">✓ Select all</button>
                 <button type="button" onclick="clearSecurityAlertSelection()" class="bbtn bbtn-clear">Clear</button>
-                <button type="button" onclick="deleteSelectedSecurityAlerts()" class="bbtn bbtn-del">🗑 Delete</button>
+                <div class="bulk-menu-wrap">
+                    <button type="button" class="bbtn bbtn-actions" onclick="toggleBulkMenu(this)">⚙️ Actions ▾</button>
+                    <div class="bulk-menu">
+                        <button type="button" onclick="closeBulkMenus();resolveSelectedSecurityAlerts()">✅ Resolve selected</button>
+                        <button type="button" onclick="closeBulkMenus();reopenSelectedSecurityAlerts()">↩️ Reopen selected</button>
+                        <div class="bulk-menu-sep"></div>
+                        <button type="button" class="danger" onclick="closeBulkMenus();deleteSelectedSecurityAlerts()">🗑 Delete selected</button>
+                    </div>
+                </div>
             </div>
         </div>
         <div id="snapshots-list">Loading...</div>
@@ -565,15 +590,25 @@
             <div class="bulk-bar-top">
                 <div class="bulk-bar-icon">🔍</div>
                 <div>
-                    <div class="bulk-bar-title">Bulk delete reviews</div>
-                    <div class="bulk-bar-sub">Tick reviews, then delete</div>
+                    <div class="bulk-bar-title">Bulk actions</div>
+                    <div class="bulk-bar-sub">Tick reviews, then resolve or delete</div>
                 </div>
                 <span id="review-selected-count" class="bulk-count">0 selected</span>
             </div>
             <div class="bulk-actions">
                 <button type="button" onclick="selectAllReviewPurchases()" class="bbtn bbtn-sel">✓ Select all</button>
                 <button type="button" onclick="clearReviewPurchaseSelection()" class="bbtn bbtn-clear">Clear</button>
-                <button type="button" onclick="deleteSelectedReviewPurchases()" class="bbtn bbtn-del">🗑 Delete</button>
+                <div class="bulk-menu-wrap">
+                    <button type="button" class="bbtn bbtn-actions" onclick="toggleBulkMenu(this)">⚙️ Actions ▾</button>
+                    <div class="bulk-menu">
+                        <button type="button" onclick="closeBulkMenus();aiCheckSelectedReviewPurchases()">🤖 AI Check selected</button>
+                        <div class="bulk-menu-sep"></div>
+                        <button type="button" onclick="closeBulkMenus();resolveSelectedReviewPurchases()">✅ Resolve selected</button>
+                        <button type="button" onclick="closeBulkMenus();reopenSelectedReviewPurchases()">↩️ Reopen selected</button>
+                        <div class="bulk-menu-sep"></div>
+                        <button type="button" class="danger" onclick="closeBulkMenus();deleteSelectedReviewPurchases()">🗑 Delete selected</button>
+                    </div>
+                </div>
             </div>
         </div>
         <div id="review-list">Loading...</div>
@@ -645,7 +680,7 @@
 
     const ADMIN_EMAIL = "campusvendiq@gmail.com";
     const ADMIN_EMAILS = [ADMIN_EMAIL];
-    const EMAILJS_PUBLIC_KEY = "e1HTC-jLa_BeyPtr";
+    const EMAILJS_PUBLIC_KEY = "e1HTC--jLa_BeyPtr";
     const EMAILJS_SERVICE_ID = "service_eda27xv";
     const EMAILJS_TEMPLATE_ID = "template_hzm9nhq";
     const EMAILJS_ALERT_RECIPIENTS = [ADMIN_EMAIL];
@@ -789,6 +824,7 @@
         }
         EMAILJS_ALERT_RECIPIENTS.forEach(adminEmail => {
             window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                email: adminEmail,                 // template "To Email" is {{email}}
                 admin_email: adminEmail,
                 to_email: adminEmail,
                 message,
@@ -1382,6 +1418,65 @@
         Promise.all(records.map(p => remove(ref(db, `${mPath()}/purchases/${p.id}`))))
             .then(() => { window.selectedReviewPurchases.clear(); updateReviewBulkUI(); appToast('Selected purchase reviews deleted', 'success'); })
             .catch(e => appToast('Bulk delete failed: ' + e.message, 'error'));
+    };
+
+    // ---------- FOLDABLE BULK-ACTIONS MENU ----------
+    window.closeBulkMenus = function () {
+        document.querySelectorAll('.bulk-menu.open').forEach(m => m.classList.remove('open'));
+    };
+    window.toggleBulkMenu = function (btn) {
+        const menu = btn.parentElement.querySelector('.bulk-menu');
+        if (!menu) return;
+        const isOpen = menu.classList.contains('open');
+        closeBulkMenus();
+        if (!isOpen) menu.classList.add('open');
+    };
+    // Close any open menu when clicking elsewhere.
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.bulk-menu-wrap')) closeBulkMenus();
+    });
+
+    // Bulk resolve / reopen — Security Alerts
+    window.resolveSelectedSecurityAlerts = function () { setSelectedSecurityResolved(true); };
+    window.reopenSelectedSecurityAlerts  = function () { setSelectedSecurityResolved(false); };
+    function setSelectedSecurityResolved(resolved) {
+        const records = Array.from(window.selectedSecurityAlerts.values());
+        if (!records.length) { appToast('Select at least one security alert first.', 'info'); return; }
+        Promise.all(records.map(a => set(ref(db, `vendingMachine/securityAlerts/${a.id}/resolved`), resolved)))
+            .then(() => { window.selectedSecurityAlerts.clear(); updateSecurityBulkUI();
+                appToast(`${records.length} alert(s) ${resolved ? 'resolved' : 'reopened'}`, 'success'); })
+            .catch(e => appToast('Bulk update failed: ' + e.message, 'error'));
+    }
+
+    // Bulk resolve / reopen — Purchase Review
+    window.resolveSelectedReviewPurchases = function () { setSelectedReviewResolved(true); };
+    window.reopenSelectedReviewPurchases  = function () { setSelectedReviewResolved(false); };
+    function setSelectedReviewResolved(resolved) {
+        const records = Array.from(window.selectedReviewPurchases.values());
+        if (!records.length) { appToast('Select at least one review first.', 'info'); return; }
+        Promise.all(records.map(p => set(ref(db, `${mPath()}/purchases/${p.id}/resolved`), resolved)))
+            .then(() => { window.selectedReviewPurchases.clear(); updateReviewBulkUI();
+                appToast(`${records.length} review(s) ${resolved ? 'resolved' : 'reopened'}`, 'success'); })
+            .catch(e => appToast('Bulk update failed: ' + e.message, 'error'));
+    }
+
+    // Bulk AI check — runs the first configured checker on every selected review.
+    window.aiCheckSelectedReviewPurchases = function () {
+        const records = Array.from(window.selectedReviewPurchases.values());
+        if (!records.length) { appToast('Select at least one review first.', 'info'); return; }
+        const checker = AI_CHECKERS.find(c => c.url);   // first one with a configured endpoint
+        if (!checker) {
+            appConfirm({
+                icon: '🤖', title: 'AI Check not configured',
+                message: 'No AI checker has a URL yet.\n\nSet a checker\'s url in the AI_CHECKERS list in admin.html to enable automatic before/after checks.',
+                confirmText: 'Got it', danger: false
+            });
+            return;
+        }
+        records.forEach(r => runAICheck(r.id, checker.id));
+        appToast(`AI check started on ${records.length} review(s) · ${checker.name}`, 'success');
+        window.selectedReviewPurchases.clear();
+        updateReviewBulkUI();
     };
     // ---------- STEPPER (one-at-a-time carousel) ----------
     function buildCarousel(containerId, cardsHtml, emptyMsg) {

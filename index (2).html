@@ -880,7 +880,7 @@
 
     // ---------- SUGGESTIONS / FEEDBACK (emails the Campus-VendIQ team) ----------
     const SUGGEST_TO_EMAIL   = "campusvendiq@gmail.com";
-    const EMAILJS_PUBLIC_KEY = "e1HTC-jLa_BeyPtr";
+    const EMAILJS_PUBLIC_KEY = "e1HTC--jLa_BeyPtr";
     const EMAILJS_SERVICE_ID = "service_eda27xv";
     const EMAILJS_TEMPLATE_ID = "template_hzm9nhq";
     const IMGBB_API_KEY = "bb26a08e59f81bab87b8b493f6c1a21f";
@@ -967,57 +967,45 @@
         btn.innerHTML = '<span class="spin"></span> Sending…';
 
         let photoUrl = '';
-        try {
-            if (window.suggestionPhotoDataUrl) {
-                setStatus('Uploading your photo…');
-                try { photoUrl = await uploadToImgBB(window.suggestionPhotoDataUrl); }
-                catch (e) { photoUrl = ''; }   // don't block the suggestion if the upload fails
-            }
+        if (window.suggestionPhotoDataUrl) {
+            setStatus('Uploading your photo…');
+            try { photoUrl = await uploadToImgBB(window.suggestionPhotoDataUrl); }
+            catch (e) { photoUrl = ''; }   // don't block the suggestion if the upload fails
+        }
 
-            setStatus('Sending your suggestion…');
-            const lines = [
-                'New student suggestion — Campus-VendIQ',
-                '',
-                'Category: ' + category,
-                'Machine: ' + (machine || '(not specified)'),
-                'From: ' + (userName ? userName + ' ' : '') + '<' + userEmail + '>',
-                'Time: ' + new Date().toLocaleString('en-MY'),
-                '',
-                'Message:',
-                message,
-                '',
-                photoUrl ? ('Photo: ' + photoUrl) : 'Photo: (none attached)'
-            ];
+        // Gmail-only: the suggestion is delivered purely by email (no Firebase write).
+        // The photo lives on ImgBB and rides along as a link.
+        setStatus('Sending your suggestion…');
+        const lines = [
+            'New student suggestion — Campus-VendIQ', '',
+            'Category: ' + category,
+            'Machine: ' + (machine || '(not specified)'),
+            'From: ' + (userName ? userName + ' ' : '') + '<' + userEmail + '>',
+            'Time: ' + new Date().toLocaleString('en-MY'), '',
+            'Message:', message, '',
+            photoUrl ? ('Photo: ' + photoUrl) : 'Photo: (none attached)'
+        ];
+        try {
             await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-                admin_email: SUGGEST_TO_EMAIL,
-                to_email: SUGGEST_TO_EMAIL,
+                email: SUGGEST_TO_EMAIL,            // template "To Email" is {{email}}
+                admin_email: SUGGEST_TO_EMAIL, to_email: SUGGEST_TO_EMAIL,
                 machine: 'Suggestion · ' + category,
                 time: new Date().toLocaleString('en-MY'),
                 message: lines.join('\n')
             });
-
-            // Best-effort archive so nothing is lost (and admins can review later).
-            try {
-                await set(push(ref(db, 'vendingMachine/suggestions')), {
-                    category, machine: machine || '', message, photoUrl: photoUrl || '',
-                    email: userEmail, name: userName || '', uid: currentUserUID || '',
-                    resolved: false, timestamp: Date.now()
-                });
-            } catch (e) {}
-
+            btn.disabled = false; btn.textContent = original;
             setStatus('✅ Sent! Thank you — the team will take a look.', 'var(--success)');
             showToast('Suggestion sent ✅', 'success');
             buzz([60, 50, 60]);
             document.getElementById('sug-message').value = '';
             document.getElementById('sug-machine').value = '';
             clearSuggestionPhoto();
-            setTimeout(() => { if (document.getElementById('suggestion-view').classList.contains('active-view')) switchView('profile-view'); }, 1400);
+            setTimeout(() => { if (document.getElementById('suggestion-view').classList.contains('active-view')) switchView('profile-view'); }, 1500);
         } catch (e) {
-            setStatus('Could not send right now. Please try again.', 'var(--danger)');
-            showToast('Sending failed — check your connection.', 'error');
-        } finally {
-            btn.disabled = false;
-            btn.textContent = original;
+            btn.disabled = false; btn.textContent = original;
+            setStatus('Could not send right now. Please try again in a moment.', 'var(--danger)');
+            showToast('Sending failed — please try again.', 'error');
+            console.warn('[suggestion] email error:', (e && (e.text || e.message)) || e);
         }
     };
 
