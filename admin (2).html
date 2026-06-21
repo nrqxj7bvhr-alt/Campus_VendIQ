@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Vending Machine - Admin</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <style>
         :root {
             --primary: #4f46e5;
@@ -313,8 +315,30 @@
             </div>
         </div>
 
+        <details id="sales-analytics-section" class="card" style="padding:0;margin-bottom:14px;overflow:hidden;">
+            <summary style="list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;">
+                <div style="min-width:0;">
+                    <h3 style="font-size:16px;margin:0;color:var(--text);">Sales Analytics</h3>
+                    <p class="text-muted" id="sales-chart-range" style="font-size:12px;margin-top:2px;">Most popular items</p>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                    <span class="badge badge-grey" id="sales-chart-total">0 sold</span>
+                    <span style="font-size:16px;color:var(--text-light);">⌄</span>
+                </div>
+            </summary>
+            <div style="border-top:1px solid var(--border);padding:12px 16px 16px;">
+                <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+                    <button type="button" onclick="resetSalesChart()" class="btn-outline btn-sm">Reset Chart</button>
+                </div>
+                <div style="height:180px;position:relative;">
+                    <canvas id="salesChart"></canvas>
+                    <p id="sales-chart-empty" class="text-muted" style="display:none;text-align:center;padding-top:62px;">No sales data yet.</p>
+                </div>
+            </div>
+        </details>
+
         <div id="low-stock-alert" class="alert-box" style="display:none;">
-            <h4>⚠️ Low Stock Alert</h4>
+            <h4>⚠️ Stock & Expiry Alerts</h4>
             <ul id="low-stock-list"></ul>
         </div>
 
@@ -392,6 +416,19 @@
             <button class="back-btn" onclick="switchView('home-view')">←</button>
             <h2>Global Transactions</h2>
         </div>
+        <div id="transactions-bulk-toolbar" style="display:none;background:white;border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:12px;box-shadow:var(--shadow-sm);">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
+                <div>
+                    <strong style="font-size:13px;">Bulk Delete Transactions</strong>
+                    <p id="transactions-selected-count" class="text-muted" style="font-size:12px;margin-top:2px;">0 selected</p>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+                <button type="button" onclick="selectAllTransactions()" class="btn-secondary btn-sm">Select All</button>
+                <button type="button" onclick="clearTransactionSelection()" class="btn-outline btn-sm">Clear</button>
+                <button type="button" onclick="deleteSelectedTransactions()" class="btn-danger btn-sm">Delete Selected</button>
+            </div>
+        </div>
         <div id="transactions-list">Loading...</div>
     </div>
 
@@ -410,6 +447,19 @@
         <div class="page-header">
             <button class="back-btn" onclick="switchView('home-view')">←</button>
             <h2>Security Alerts</h2>
+        </div>
+        <div id="security-bulk-toolbar" style="display:none;background:white;border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:12px;box-shadow:var(--shadow-sm);">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
+                <div>
+                    <strong style="font-size:13px;">Bulk Delete Security Alerts</strong>
+                    <p id="security-selected-count" class="text-muted" style="font-size:12px;margin-top:2px;">0 selected</p>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+                <button type="button" onclick="selectAllSecurityAlerts()" class="btn-secondary btn-sm">Select All</button>
+                <button type="button" onclick="clearSecurityAlertSelection()" class="btn-outline btn-sm">Clear</button>
+                <button type="button" onclick="deleteSelectedSecurityAlerts()" class="btn-danger btn-sm">Delete Selected</button>
+            </div>
         </div>
         <div id="snapshots-list">Loading...</div>
     </div>
@@ -430,6 +480,19 @@
             <img id="test-cam-img" src="" alt="" style="width:100%;border-radius:6px;display:none;border:1px solid var(--border);">
             <p id="test-cam-url" style="font-size:11px;color:var(--text-light);margin-top:6px;word-break:break-all;"></p>
         </div>
+        <div id="camera-bulk-toolbar" style="display:none;background:white;border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:12px;box-shadow:var(--shadow-sm);">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
+                <div>
+                    <strong style="font-size:13px;">Bulk Delete Photos</strong>
+                    <p id="camera-selected-count" class="text-muted" style="font-size:12px;margin-top:2px;">0 selected</p>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+                <button type="button" onclick="selectAllCameraLogs()" class="btn-secondary btn-sm">Select All</button>
+                <button type="button" onclick="clearCameraLogSelection()" class="btn-outline btn-sm">Clear</button>
+                <button type="button" onclick="deleteSelectedCameraLogs()" class="btn-danger btn-sm">Delete Selected</button>
+            </div>
+        </div>
         <div id="camera-logs-list">Loading...</div>
     </div>
 
@@ -443,6 +506,19 @@
         <div style="display:flex;gap:6px;margin-bottom:14px;">
             <button id="review-filter-flagged" onclick="setReviewFilter('flagged')" class="btn-danger btn-sm">⚠️ Flagged</button>
             <button id="review-filter-all" onclick="setReviewFilter('all')" class="btn-secondary btn-sm">Show All</button>
+        </div>
+        <div id="review-bulk-toolbar" style="display:none;background:white;border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:12px;box-shadow:var(--shadow-sm);">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
+                <div>
+                    <strong style="font-size:13px;">Bulk Delete Purchase Reviews</strong>
+                    <p id="review-selected-count" class="text-muted" style="font-size:12px;margin-top:2px;">0 selected</p>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+                <button type="button" onclick="selectAllReviewPurchases()" class="btn-secondary btn-sm">Select All</button>
+                <button type="button" onclick="clearReviewPurchaseSelection()" class="btn-outline btn-sm">Clear</button>
+                <button type="button" onclick="deleteSelectedReviewPurchases()" class="btn-danger btn-sm">Delete Selected</button>
+            </div>
         </div>
         <div id="review-list">Loading...</div>
     </div>
@@ -458,6 +534,15 @@
             1) Set name/price/max → Save. &nbsp;2) Empty tray → Tare. &nbsp;3) Place items → Calibrate. &nbsp;4) Calc Stock.
         </p>
         <p id="cmd-status"></p>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:12px;border-radius:8px;margin-bottom:14px;text-align:left;">
+            <h4 style="font-size:14px;color:var(--success);margin-bottom:8px;">📍 Machine Location Settings</h4>
+            <input type="text" id="config-loc-name" placeholder="Location name (e.g. Faculty of Electrical Engineering)" style="margin-bottom:8px;padding:8px;font-size:13px;">
+            <div style="display:flex;gap:8px;">
+                <input type="number" id="config-lat" placeholder="Latitude" step="0.000001" style="margin-bottom:0;padding:8px;font-size:13px;">
+                <input type="number" id="config-lng" placeholder="Longitude" step="0.000001" style="margin-bottom:0;padding:8px;font-size:13px;">
+            </div>
+            <p style="font-size:11px;color:var(--text-light);margin-top:6px;">Right-click Google Maps and copy the latitude/longitude.</p>
+        </div>
         <div id="dynamic-items-container" style="max-height:340px;overflow-y:auto;margin-bottom:12px;"></div>
         <button class="btn-success" onclick="saveMachineConfig()">💾 Save Product Data</button>
         <button class="btn-danger" onclick="document.getElementById('config-modal').style.display='none'">Close</button>
@@ -499,12 +584,15 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    const ADMIN_EMAILS = [
-        "teoyunje@graduate.utm.my",
-        "wonghi@graduate.utm.my",
-        "justinliewtze@graduate.utm.my",
-        "yubin@graduate.utm.my"
-    ];
+    const ADMIN_EMAIL = "campusvendiq@gmail.com";
+    const ADMIN_EMAILS = [ADMIN_EMAIL];
+    const EMAILJS_PUBLIC_KEY = "e1HTC-jLa_BeyPtr";
+    const EMAILJS_SERVICE_ID = "service_eda27xv";
+    const EMAILJS_TEMPLATE_ID = "template_hzm9nhq";
+    const EMAILJS_ALERT_RECIPIENTS = [ADMIN_EMAIL];
+    try {
+        if (window.emailjs && EMAILJS_PUBLIC_KEY) window.emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+    } catch (e) { console.warn('EmailJS init failed', e); }
 
     // ---------- NATIVE-FEEL DIALOG + TOAST (replace browser confirm/alert) ----------
     // Promise-based so call sites stay clean:  if (!await appConfirm({...})) return;
@@ -540,12 +628,24 @@
     const mPath = () => `vendingMachine/machines/${window.adminCurrentMachine}`;
     const SLOT_KEYS = ["s1", "s2", "s3"];
     let adminInventoryUnsub = null;
+    let adminInfoUnsub = null;
     let cameraEnabled = true;
     window.adjustTargetUid = null;
     window.usersData = {};
+    window.machineInfoConfig = {};
     window.stepperState = {};
     window.reviewFilter = 'flagged';
     window.reviewData = [];
+    let salesChart = null;
+    window.salesChartResetAt = 0;
+    window.selectedTransactionRecords = new Map();
+    window.selectedCameraLogs = new Map();
+    window.selectedSecurityAlerts = new Map();
+    window.selectedReviewPurchases = new Map();
+    window.latestTransactionRecords = [];
+    window.latestCameraLogRecords = [];
+    window.latestSecurityAlertRecords = [];
+    window.latestReviewPurchaseRecords = [];
 
     // ---------- CAMERA TOGGLE ----------
     window.toggleCamera = function () {
@@ -612,8 +712,154 @@
         fab.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
     }
 
+    function isExpiredDate(dateStr) {
+        if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        return dateStr < today;
+    }
+
+    function alertStorageKey(key) {
+        return 'utm-smart-vending-alert:' + key;
+    }
+
+    function sendAdminEmail(message, machine = 'Machine 01') {
+        if (!window.emailjs || !EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID) {
+            console.warn('EmailJS is not ready; alert not sent:', message);
+            return;
+        }
+        EMAILJS_ALERT_RECIPIENTS.forEach(adminEmail => {
+            window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                admin_email: adminEmail,
+                to_email: adminEmail,
+                message,
+                machine,
+                time: new Date().toLocaleString('en-MY')
+            }).catch(err => console.warn('EmailJS send failed', err));
+        });
+    }
+
+    function sendAdminAlertOnce(key, message, machine = 'Machine 01') {
+        const storageKey = alertStorageKey(key);
+        try {
+            if (localStorage.getItem(storageKey)) return;
+            localStorage.setItem(storageKey, String(Date.now()));
+        } catch (e) {}
+        sendAdminEmail(message, machine);
+    }
+
+    function clearAdminAlertOnce(key) {
+        try { localStorage.removeItem(alertStorageKey(key)); } catch (e) {}
+    }
+
+    function addSoldItems(counts, description) {
+        if (!description || /^no items taken$/i.test(description)) return;
+        description.split(',').forEach(part => {
+            const text = part.trim();
+            if (!text) return;
+            const m = text.match(/^(\d+)\s*x\s+(.+)$/i);
+            const qty = m ? parseInt(m[1]) : 1;
+            const name = (m ? m[2] : text).trim();
+            if (!name) return;
+            counts[name] = (counts[name] || 0) + (isNaN(qty) ? 1 : qty);
+        });
+    }
+
+    function collectSalesByItem(usersData) {
+        const counts = {};
+        Object.values(usersData || {}).forEach(u => {
+            if (!u || !u.history) return;
+            Object.values(u.history).forEach(t => {
+                const type = t.type || 'purchase';
+                if (type === 'topup' || type === 'transfer_in' || type === 'transfer_out') return;
+                if (window.salesChartResetAt && (t.timestamp || 0) < window.salesChartResetAt) return;
+                addSoldItems(counts, t.item || 'Unknown Item');
+            });
+        });
+        return counts;
+    }
+
+    function refreshSalesChart() {
+        renderSalesChart(collectSalesByItem(window.usersData));
+    }
+
+    function updateSalesChartRangeLabel() {
+        const el = document.getElementById('sales-chart-range');
+        if (!el) return;
+        el.textContent = window.salesChartResetAt
+            ? 'Most popular items since ' + new Date(window.salesChartResetAt).toLocaleString('en-MY')
+            : 'Most popular items';
+    }
+
+    function renderSalesChart(counts) {
+        const canvas = document.getElementById('salesChart');
+        const empty = document.getElementById('sales-chart-empty');
+        const totalEl = document.getElementById('sales-chart-total');
+        if (!canvas) return;
+        updateSalesChartRangeLabel();
+        const entries = Object.entries(counts || {}).sort((a, b) => b[1] - a[1]).slice(0, 6);
+        const total = entries.reduce((sum, item) => sum + item[1], 0);
+        if (totalEl) totalEl.textContent = `${total} sold`;
+        if (entries.length === 0 || !window.Chart) {
+            if (salesChart) { salesChart.destroy(); salesChart = null; }
+            canvas.style.display = 'none';
+            if (empty) {
+                empty.style.display = 'block';
+                empty.textContent = window.Chart ? 'No sales data yet.' : 'Chart library is still loading.';
+            }
+            return;
+        }
+        canvas.style.display = 'block';
+        if (empty) empty.style.display = 'none';
+        const data = {
+            labels: entries.map(([name]) => name),
+            datasets: [{
+                label: 'Units Sold',
+                data: entries.map(([, qty]) => qty),
+                backgroundColor: ['#0891b2', '#059669', '#d97706', '#4f46e5', '#dc2626', '#0f766e', '#7c3aed', '#64748b'],
+                borderRadius: 0
+            }]
+        };
+        const options = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            datasets: { bar: { borderRadius: 0, barPercentage: 0.55, categoryPercentage: 0.7 } },
+            scales: {
+                x: { ticks: { maxRotation: 0, minRotation: 0, autoSkip: true } },
+                y: { beginAtZero: true, ticks: { precision: 0 } }
+            }
+        };
+        if (salesChart) {
+            salesChart.data = data;
+            salesChart.options = options;
+            salesChart.update();
+        } else {
+            salesChart = new window.Chart(canvas, { type: 'bar', data, options });
+        }
+    }
+
+    window.resetSalesChart = async function () {
+        if (!await appConfirm({
+            icon: '📊',
+            title: 'Reset Sales Chart',
+            message: 'Reset the chart from now? Transaction history and total sales will stay unchanged.',
+            confirmText: 'Reset Chart',
+            danger: false
+        })) return;
+        set(ref(db, 'vendingMachine/analytics/salesChartResetAt'), Date.now())
+            .then(() => appToast('Sales chart reset', 'success'))
+            .catch(e => appToast('Reset failed: ' + e.message, 'error'));
+    };
+
     // ---------- CONFIG MODAL ----------
     window.openConfigModal = function () {
+        const locName = document.getElementById('config-loc-name');
+        const lat = document.getElementById('config-lat');
+        const lng = document.getElementById('config-lng');
+        if (locName) locName.value = window.machineInfoConfig.locationName || "";
+        if (lat) lat.value = window.machineInfoConfig.lat || "";
+        if (lng) lng.value = window.machineInfoConfig.lng || "";
         const c = document.getElementById('dynamic-items-container');
         c.innerHTML = '';
         SLOT_KEYS.forEach((key, idx) => {
@@ -629,6 +875,12 @@
         const max = d.max !== undefined ? d.max : 5;
         const en = d.en !== undefined ? parseInt(d.en) : 1;
         const qty = d.qty !== undefined ? d.qty : 0;
+        const expiry = d.expiry || "";
+        const expiryExpired = isExpiredDate(expiry);
+        const expiryColor = expiryExpired ? "var(--danger)" : "#2563eb";
+        const expiryReminder = expiry
+            ? `<div style="font-size:12px;color:${expiryColor};font-weight:700;margin:-2px 0 8px 98px;">${expiryExpired ? "⚠️ Expired — replace this item" : "Expiry set: " + expiry}</div>`
+            : "";
         const cal = d.cal_status || "not_calibrated";
         const status = d.status || "empty";
         const calColor = cal === "calibrated" ? "var(--success)" : "var(--danger)";
@@ -650,6 +902,11 @@
                     <label style="font-size:13px;color:var(--text-light);width:90px;flex-shrink:0;">Max Capacity</label>
                     <input type="number" class="slot-max-input" value="${max}" step="1" min="1" style="flex:1;margin:0;">
                 </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                    <label style="font-size:13px;color:var(--text-light);width:90px;flex-shrink:0;">Expiry Date</label>
+                    <input type="date" class="slot-expiry-input" value="${expiry}" style="flex:1;margin:0;color:${expiry ? expiryColor : 'var(--text)'};border-color:${expiry ? expiryColor : 'var(--border)'};">
+                </div>
+                ${expiryReminder}
                 <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px;">
                     <span><strong>Qty:</strong> <span class="slot-qty-readout">${qty}</span></span>
                     <span style="color:${calColor};font-weight:600;">${cal}</span>
@@ -711,6 +968,14 @@
     };
 
     window.saveMachineConfig = function () {
+        const locName = document.getElementById('config-loc-name').value.trim();
+        const latRaw = parseFloat(document.getElementById('config-lat').value);
+        const lngRaw = parseFloat(document.getElementById('config-lng').value);
+        const infoUpdates = {
+            locationName: locName,
+            lat: isNaN(latRaw) ? null : latRaw,
+            lng: isNaN(lngRaw) ? null : lngRaw
+        };
         const rows = document.querySelectorAll('.dynamic-item-row');
         const updates = {};
         rows.forEach(row => {
@@ -719,10 +984,12 @@
             const price = parseFloat(row.querySelector('.slot-price-input').value) || 0;
             const max = parseInt(row.querySelector('.slot-max-input').value) || 5;
             const en = row.querySelector('.slot-en-input').checked ? 1 : 0;
+            const expiry = row.querySelector('.slot-expiry-input').value;
             updates[`${key}/name`] = name;
             updates[`${key}/price`] = price;
             updates[`${key}/max`] = max;
             updates[`${key}/en`] = en;
+            updates[`${key}/expiry`] = expiry || null;
             const d = window.dynamicConfig[key] || {};
             if (d.qty === undefined) updates[`${key}/qty`] = 0;
             if (d.unit_raw === undefined) updates[`${key}/unit_raw`] = 0;
@@ -731,7 +998,10 @@
             if (d.cal_status === undefined) updates[`${key}/cal_status`] = "not_calibrated";
             if (d.status === undefined) updates[`${key}/status`] = "empty";
         });
-        update(ref(db, `${mPath()}/inventory`), updates)
+        Promise.all([
+            update(ref(db, `${mPath()}/info`), infoUpdates),
+            update(ref(db, `${mPath()}/inventory`), updates)
+        ])
             .then(() => { appToast("Product data saved ✅", 'success'); document.getElementById('config-modal').style.display = 'none'; })
             .catch(err => appToast("Failed to save: " + err.message, 'error'));
     };
@@ -820,6 +1090,188 @@
         return new Date(ts).toLocaleString('en-MY');
     };
 
+    function bulkSelectionId(...parts) {
+        return parts.map(p => encodeURIComponent(String(p || ''))).join('|');
+    }
+
+    function pruneBulkSelection(selectionMap, validIds) {
+        Array.from(selectionMap.keys()).forEach(id => {
+            if (!validIds.has(id)) selectionMap.delete(id);
+        });
+    }
+
+    function syncBulkCheckboxes() {
+        document.querySelectorAll('.bulk-transaction-check').forEach(cb => {
+            cb.checked = window.selectedTransactionRecords.has(cb.dataset.selid);
+        });
+        document.querySelectorAll('.bulk-camera-check').forEach(cb => {
+            cb.checked = window.selectedCameraLogs.has(cb.dataset.id);
+        });
+        document.querySelectorAll('.bulk-security-check').forEach(cb => {
+            cb.checked = window.selectedSecurityAlerts.has(cb.dataset.id);
+        });
+        document.querySelectorAll('.bulk-review-check').forEach(cb => {
+            cb.checked = window.selectedReviewPurchases.has(cb.dataset.id);
+        });
+    }
+
+    function updateTransactionBulkUI() {
+        const toolbar = document.getElementById('transactions-bulk-toolbar');
+        const countEl = document.getElementById('transactions-selected-count');
+        if (toolbar) toolbar.style.display = window.latestTransactionRecords.length ? 'block' : 'none';
+        if (countEl) countEl.textContent = `${window.selectedTransactionRecords.size} selected`;
+        syncBulkCheckboxes();
+    }
+
+    function updateCameraBulkUI() {
+        const toolbar = document.getElementById('camera-bulk-toolbar');
+        const countEl = document.getElementById('camera-selected-count');
+        if (toolbar) toolbar.style.display = window.latestCameraLogRecords.length ? 'block' : 'none';
+        if (countEl) countEl.textContent = `${window.selectedCameraLogs.size} selected`;
+        syncBulkCheckboxes();
+    }
+    function updateSecurityBulkUI() {
+        const toolbar = document.getElementById('security-bulk-toolbar');
+        const countEl = document.getElementById('security-selected-count');
+        if (toolbar) toolbar.style.display = window.latestSecurityAlertRecords.length ? 'block' : 'none';
+        if (countEl) countEl.textContent = `${window.selectedSecurityAlerts.size} selected`;
+        syncBulkCheckboxes();
+    }
+
+    function updateReviewBulkUI() {
+        const toolbar = document.getElementById('review-bulk-toolbar');
+        const countEl = document.getElementById('review-selected-count');
+        if (toolbar) toolbar.style.display = window.latestReviewPurchaseRecords.length ? 'block' : 'none';
+        if (countEl) countEl.textContent = `${window.selectedReviewPurchases.size} selected`;
+        syncBulkCheckboxes();
+    }
+
+    window.toggleTransactionSelected = function (checkbox) {
+        const id = checkbox.dataset.selid;
+        const record = { uid: checkbox.dataset.uid, key: checkbox.dataset.key };
+        if (checkbox.checked) window.selectedTransactionRecords.set(id, record);
+        else window.selectedTransactionRecords.delete(id);
+        updateTransactionBulkUI();
+    };
+
+    window.selectAllTransactions = function () {
+        window.latestTransactionRecords.forEach(t => {
+            window.selectedTransactionRecords.set(t.selId, { uid: t.uid, key: t.key });
+        });
+        updateTransactionBulkUI();
+    };
+
+    window.clearTransactionSelection = function () {
+        window.selectedTransactionRecords.clear();
+        updateTransactionBulkUI();
+    };
+
+    window.deleteSelectedTransactions = async function () {
+        const records = Array.from(window.selectedTransactionRecords.values());
+        if (!records.length) { appToast('Select at least one transaction first.', 'info'); return; }
+        if (!await appConfirm({ icon: 'Delete', title: 'Delete Selected Transactions', message: `Delete ${records.length} selected transaction record(s)?\n\nThis does NOT change user balances.`, confirmText: 'Delete Selected' })) return;
+        Promise.all(records.map(t => remove(ref(db, `users/${t.uid}/history/${t.key}`))))
+            .then(() => { window.selectedTransactionRecords.clear(); updateTransactionBulkUI(); appToast('Selected transactions deleted', 'success'); })
+            .catch(e => appToast('Bulk delete failed: ' + e.message, 'error'));
+    };
+
+    window.toggleCameraLogSelected = function (checkbox) {
+        const id = checkbox.dataset.id;
+        const record = { id, imageUrl: decodeURIComponent(checkbox.dataset.image || '') };
+        if (checkbox.checked) window.selectedCameraLogs.set(id, record);
+        else window.selectedCameraLogs.delete(id);
+        updateCameraBulkUI();
+    };
+
+    window.selectAllCameraLogs = function () {
+        window.latestCameraLogRecords.forEach(l => {
+            window.selectedCameraLogs.set(l.id, { id: l.id, imageUrl: l.imageUrl });
+        });
+        updateCameraBulkUI();
+    };
+
+    window.clearCameraLogSelection = function () {
+        window.selectedCameraLogs.clear();
+        updateCameraBulkUI();
+    };
+
+    function deleteCameraImageFile(imageUrl) {
+        if (!imageUrl || imageUrl.includes('placehold.co')) return;
+        try {
+            const u = new URL(imageUrl);
+            const file = u.pathname.replace(/^\/photo/, '');
+            fetch(`http://${u.host}/delete?file=${encodeURIComponent(file)}`).catch(() => {});
+        } catch (e) {}
+    }
+
+    window.deleteSelectedCameraLogs = async function () {
+        const records = Array.from(window.selectedCameraLogs.values());
+        if (!records.length) { appToast('Select at least one photo first.', 'info'); return; }
+        if (!await appConfirm({ icon: 'Delete', title: 'Delete Selected Photos', message: `Delete ${records.length} selected photo log(s)?`, confirmText: 'Delete Selected' })) return;
+        Promise.all(records.map(l => remove(ref(db, `vendingMachine/cameraLogs/${l.id}`))))
+            .then(() => {
+                records.forEach(l => deleteCameraImageFile(l.imageUrl));
+                window.selectedCameraLogs.clear();
+                updateCameraBulkUI();
+                appToast('Selected photos deleted', 'success');
+            })
+            .catch(e => appToast('Bulk delete failed: ' + e.message, 'error'));
+    };
+    window.toggleSecurityAlertSelected = function (checkbox) {
+        const id = checkbox.dataset.id;
+        if (checkbox.checked) window.selectedSecurityAlerts.set(id, { id });
+        else window.selectedSecurityAlerts.delete(id);
+        updateSecurityBulkUI();
+    };
+
+    window.selectAllSecurityAlerts = function () {
+        window.latestSecurityAlertRecords.forEach(a => {
+            window.selectedSecurityAlerts.set(a.id, { id: a.id });
+        });
+        updateSecurityBulkUI();
+    };
+
+    window.clearSecurityAlertSelection = function () {
+        window.selectedSecurityAlerts.clear();
+        updateSecurityBulkUI();
+    };
+
+    window.deleteSelectedSecurityAlerts = async function () {
+        const records = Array.from(window.selectedSecurityAlerts.values());
+        if (!records.length) { appToast('Select at least one security alert first.', 'info'); return; }
+        if (!await appConfirm({ icon: 'Delete', title: 'Delete Selected Security Alerts', message: `Delete ${records.length} selected security alert(s)?`, confirmText: 'Delete Selected' })) return;
+        Promise.all(records.map(a => remove(ref(db, `vendingMachine/securityAlerts/${a.id}`))))
+            .then(() => { window.selectedSecurityAlerts.clear(); updateSecurityBulkUI(); appToast('Selected security alerts deleted', 'success'); })
+            .catch(e => appToast('Bulk delete failed: ' + e.message, 'error'));
+    };
+
+    window.toggleReviewPurchaseSelected = function (checkbox) {
+        const id = checkbox.dataset.id;
+        if (checkbox.checked) window.selectedReviewPurchases.set(id, { id });
+        else window.selectedReviewPurchases.delete(id);
+        updateReviewBulkUI();
+    };
+
+    window.selectAllReviewPurchases = function () {
+        window.latestReviewPurchaseRecords.forEach(p => {
+            window.selectedReviewPurchases.set(p.id, { id: p.id });
+        });
+        updateReviewBulkUI();
+    };
+
+    window.clearReviewPurchaseSelection = function () {
+        window.selectedReviewPurchases.clear();
+        updateReviewBulkUI();
+    };
+
+    window.deleteSelectedReviewPurchases = async function () {
+        const records = Array.from(window.selectedReviewPurchases.values());
+        if (!records.length) { appToast('Select at least one purchase review first.', 'info'); return; }
+        if (!await appConfirm({ icon: 'Delete', title: 'Delete Selected Purchase Reviews', message: `Delete ${records.length} selected purchase review(s)?`, confirmText: 'Delete Selected' })) return;
+        Promise.all(records.map(p => remove(ref(db, `${mPath()}/purchases/${p.id}`))))
+            .then(() => { window.selectedReviewPurchases.clear(); updateReviewBulkUI(); appToast('Selected purchase reviews deleted', 'success'); })
+            .catch(e => appToast('Bulk delete failed: ' + e.message, 'error'));
+    };
     // ---------- STEPPER (one-at-a-time carousel) ----------
     function buildCarousel(containerId, cardsHtml, emptyMsg) {
         const el = document.getElementById(containerId);
@@ -848,6 +1300,7 @@
                 <button class="stepper-btn" onclick="stepCard('${containerId}',1)" ${st.index === n - 1 ? 'disabled' : ''}>Next ›</button>
             </div>` : `<div class="stepper-nav" style="justify-content:center;"><span class="stepper-count">1 of 1</span></div>`;
         el.innerHTML = `<div>${st.cards[st.index]}</div>${nav}`;
+        syncBulkCheckboxes();
     }
 
     window.stepCard = function (containerId, dir) {
@@ -896,6 +1349,8 @@
     window.deleteUserTransaction = async function (uid, key) {
         if (!await appConfirm({ icon: '🗑️', title: 'Delete Transaction', message: "Delete this transaction record permanently?\n\nThis does NOT change the user's balance — it only removes the log entry." })) return;
         remove(ref(db, `users/${uid}/history/${key}`)).then(() => {
+            window.selectedTransactionRecords.delete(bulkSelectionId(uid, key));
+            updateTransactionBulkUI();
             // keep the local cache in sync, then re-render the open history view
             if (window.usersData?.[uid]?.history) delete window.usersData[uid].history[key];
             const view = document.getElementById('user-history-view');
@@ -919,15 +1374,23 @@
             const qty = c.qty !== undefined ? parseInt(c.qty) : 0;
             const max = c.max !== undefined ? parseInt(c.max) : 5;
             const price = c.price !== undefined ? parseFloat(c.price).toFixed(2) : "0.00";
+            const expiry = c.expiry || "";
+            const expiryExpired = isExpiredDate(expiry);
+            const expiryColor = expiryExpired ? "var(--danger)" : "#2563eb";
+            const expiryLine = expiry
+                ? `<div style="color:${expiryColor};font-size:12px;font-weight:700;margin-top:2px;">${expiryExpired ? "⚠️ Expired: " : "Exp: "}${expiry}</div>`
+                : "";
             const cal = c.cal_status || "not_calibrated";
             const enabled = c.en === undefined ? 1 : parseInt(c.en);
             const isLow = enabled === 1 && c.name && qty <= 2;
+            const needsAttention = isLow || expiryExpired;
             const pct = max > 0 ? Math.min(100, Math.round(qty / max * 100)) : 0;
             html += `
-                <div class="inventory-item ${isLow ? 'low-stock' : ''}">
+                <div class="inventory-item ${needsAttention ? 'low-stock' : ''}">
                     <div style="flex:1;min-width:0;">
                         <strong style="font-size:15px;">${name}</strong>
                         <div style="color:var(--text-light);font-size:12px;margin-top:2px;">RM ${price} · ${cal} · ${enabled ? "enabled" : "disabled"}</div>
+                        ${expiryLine}
                         <div class="stock-bar-wrap"><div class="stock-bar ${isLow ? 'low' : ''}" style="width:${pct}%"></div></div>
                     </div>
                     <div style="text-align:right;min-width:52px;margin-left:10px;">
@@ -940,6 +1403,16 @@
                 lowHtml += qty === 0
                     ? `<li style="color:var(--danger);font-weight:700;"><strong>${name}:</strong> OUT OF STOCK — restock now</li>`
                     : `<li><strong>${name}:</strong> Only ${qty} left</li>`;
+            }
+            const stockAlertKey = `stock-zero:${window.adminCurrentMachine}:${k}`;
+            if (enabled === 1 && c.name && qty === 0) {
+                sendAdminAlertOnce(stockAlertKey, `Warning: Slot ${i + 1} (${name}) is out of stock in ${window.adminCurrentMachine}!`, window.adminCurrentMachine);
+            } else {
+                clearAdminAlertOnce(stockAlertKey);
+            }
+            if (expiryExpired) {
+                hasLow = true;
+                lowHtml += `<li style="color:var(--danger);font-weight:700;"><strong>${name}:</strong> EXPIRED on ${expiry} — replace now</li>`;
             }
         });
         document.getElementById('inventory-list').innerHTML = html;
@@ -1000,6 +1473,8 @@
     function startAdminListeners() {
         window.attachAdminMachineListeners = function () {
             if (adminInventoryUnsub) adminInventoryUnsub();
+            if (adminInfoUnsub) adminInfoUnsub();
+            window.machineInfoConfig = {};
             document.getElementById('inventory-list').innerHTML = "<p>Loading machine data...</p>";
             adminInventoryUnsub = onValue(ref(db, `${mPath()}/inventory`), snap => {
                 const cleaned = {};
@@ -1009,6 +1484,9 @@
                 }
                 window.dynamicConfig = cleaned;
                 renderInventory();
+            });
+            adminInfoUnsub = onValue(ref(db, `${mPath()}/info`), snap => {
+                window.machineInfoConfig = snap.val() || {};
             });
         };
         attachAdminMachineListeners();
@@ -1050,9 +1528,16 @@
             updateCamStorageBtn();
         });
 
+        // Sales chart reset point
+        onValue(ref(db, 'vendingMachine/analytics/salesChartResetAt'), snap => {
+            window.salesChartResetAt = snap.val() || 0;
+            updateSalesChartRangeLabel();
+            refreshSalesChart();
+        });
+
         // Users / transactions
         onValue(ref(db, "users"), snap => {
-            let txList = [], sessionsHtml = '', totalEarnings = 0, totalSales = 0, userCount = 0, debtorsHtml = '', debtCount = 0;
+            let txList = [], sessionsHtml = '', totalEarnings = 0, totalSales = 0, userCount = 0, debtorsHtml = '', debtCount = 0, salesByItem = {};
             if (snap.exists()) {
                 window.usersData = snap.val();
                 userCount = Object.keys(snap.val()).length;
@@ -1107,28 +1592,51 @@
                     }
 
                     if (u.history) Object.entries(u.history).forEach(([key, t]) => {
-                        if (t.type === "topup") totalEarnings += parseFloat(t.amount || 0);
-                        else totalSales += parseFloat(t.cost || 0);
-                        txList.push({ uid, key, email, item: t.item, machine: t.machine, cost: t.type === "topup" ? `+ RM ${parseFloat(t.amount || 0).toFixed(2)}` : `- RM ${parseFloat(t.cost || 0).toFixed(2)}`, isTopup: t.type === "topup", timestamp: t.timestamp });
+                        const type = t.type || 'purchase';
+                        if (type === "topup") {
+                            const amount = parseFloat(t.amount || 0);
+                            totalEarnings += amount;
+                            txList.push({ uid, key, email, item: t.item || 'Account Top-Up', machine: t.machine, cost: `+ RM ${amount.toFixed(2)}`, badgeClass: 'badge-green', kind: type, timestamp: t.timestamp });
+                            return;
+                        }
+                        if (type === "transfer_in" || type === "transfer_out") {
+                            const amount = parseFloat(t.amount || 0);
+                            txList.push({ uid, key, email, item: t.item || (type === "transfer_in" ? 'Received Transfer' : 'Sent Transfer'), machine: '', cost: `${type === "transfer_in" ? '+' : '-'} RM ${amount.toFixed(2)}`, badgeClass: type === "transfer_in" ? 'badge-green' : 'badge-grey', kind: type, timestamp: t.timestamp });
+                            return;
+                        }
+                        const saleCost = parseFloat(t.cost || 0);
+                        totalSales += saleCost;
+                        if (!window.salesChartResetAt || (t.timestamp || 0) >= window.salesChartResetAt) addSoldItems(salesByItem, t.item || 'Unknown Item');
+                        txList.push({ uid, key, email, item: t.item || 'Purchase', machine: t.machine, cost: `- RM ${saleCost.toFixed(2)}`, badgeClass: 'badge-red', kind: 'purchase', timestamp: t.timestamp });
                     });
                 });
             }
             document.getElementById('admin-total-earnings').innerText = totalEarnings.toFixed(2);
             if (document.getElementById('admin-total-sales')) document.getElementById('admin-total-sales').innerText = totalSales.toFixed(2);
             if (document.getElementById('admin-user-count')) document.getElementById('admin-user-count').innerText = userCount;
+            renderSalesChart(salesByItem);
             txList.sort((a, b) => b.timestamp - a.timestamp);
+            window.latestTransactionRecords = txList.map(t => ({ uid: t.uid, key: t.key, selId: bulkSelectionId(t.uid, t.key) }));
+            pruneBulkSelection(window.selectedTransactionRecords, new Set(window.latestTransactionRecords.map(t => t.selId)));
             let txHtml = '';
             txList.forEach(t => {
-                const badge = t.isTopup ? `<span class="badge badge-green">${t.cost}</span>` : `<span class="badge badge-red">${t.cost}</span>`;
-                const mi = t.machine ? ` · ${t.machine}` : (!t.isTopup ? " · Machine 1" : "");
+                const badge = `<span class="badge ${t.badgeClass || 'badge-red'}">${t.cost}</span>`;
+                const mi = t.machine ? ` · ${t.machine}` : (t.kind === 'purchase' ? " · Machine 1" : "");
+                const selId = bulkSelectionId(t.uid, t.key);
+                const checked = window.selectedTransactionRecords.has(selId) ? 'checked' : '';
                 txHtml += `<div class="list-card">
+                    <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;font-weight:700;color:var(--primary);">
+                        <input type="checkbox" class="bulk-transaction-check" data-selid="${selId}" data-uid="${t.uid}" data-key="${t.key}" onchange="toggleTransactionSelected(this)" ${checked} style="width:auto;margin:0;">
+                        Select this record
+                    </label>
                     <div style="display:flex;justify-content:space-between;align-items:center;"><h4>${t.item}</h4>${badge}</div>
                     <p>${t.email}</p>
                     <p>${formatDate(t.timestamp)}${mi}</p>
-                    <button onclick="deleteUserTransaction('${t.uid}','${t.key}')" class="btn-danger btn-sm" style="margin-top:8px;">🗑 Delete</button>
+                    <button onclick="deleteUserTransaction('${t.uid}','${t.key}')" class="btn-danger btn-sm" style="margin-top:8px;">Delete</button>
                 </div>`;
             });
             document.getElementById('transactions-list').innerHTML = txHtml || '<p class="text-muted">No purchase history.</p>';
+            updateTransactionBulkUI();
             document.getElementById('sessions-list').innerHTML = sessionsHtml || '<p class="text-muted">No registered users found.</p>';
             if (document.getElementById('debts-list')) document.getElementById('debts-list').innerHTML = debtorsHtml || '<p class="text-muted">No unpaid debts. 🎉</p>';
             if (document.getElementById('admin-debt-count')) document.getElementById('admin-debt-count').innerText = debtCount;
@@ -1136,7 +1644,7 @@
 
         // Security alerts
         onValue(ref(db, "vendingMachine/securityAlerts"), snap => {
-            let cards = [], hasUnresolved = false, unresolvedCount = 0;
+            let cards = [], hasUnresolved = false, unresolvedCount = 0, securityRecords = [];
             const friendly = (r) => ({
                 'unauthorized_door_open': 'Unauthorized Door Open',
                 'item_moved_between_trays': 'Item Moved to Wrong Tray',
@@ -1148,12 +1656,26 @@
                 let alerts = []; snap.forEach(c => { alerts.push({ id: c.key, ...c.val() }); });
                 alerts.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
                 alerts.forEach(a => {
-                    if (!a.resolved) { hasUnresolved = true; unresolvedCount++; }
+                    securityRecords.push({ id: a.id });
+                    if (!a.resolved) {
+                        hasUnresolved = true;
+                        unresolvedCount++;
+                        sendAdminAlertOnce(
+                            `security:${a.id}`,
+                            `Security alert: ${friendly(a.reason)}${a.email ? ' for ' + a.email : ''}${a.items ? ' - Items: ' + a.items : ''}${a.amount ? ' - Amount: RM ' + parseFloat(a.amount || 0).toFixed(2) : ''}`,
+                            a.machine || 'Machine 01'
+                        );
+                    }
+                    const checked = window.selectedSecurityAlerts.has(a.id) ? 'checked' : '';
                     const badge = a.resolved ? `<span class="badge badge-green">Resolved</span>` : `<span class="badge badge-red">Unresolved</span>`;
                     const photo = a.image_url
                         ? `<a href="${a.image_url}" target="_blank"><img src="${a.image_url}" style="width:100%;height:160px;object-fit:cover;border-radius:8px;border:1px solid var(--border);margin-bottom:10px;"></a>`
                         : `<div style="width:100%;height:100px;background:var(--bg);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text-light);font-size:13px;margin-bottom:10px;">No photo captured</div>`;
                     cards.push(`<div class="list-card ${a.resolved ? '' : 'alert-card'}" style="${a.resolved ? 'opacity:0.7;' : ''}">
+                        <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;font-weight:700;color:var(--primary);">
+                            <input type="checkbox" class="bulk-security-check" data-id="${a.id}" onchange="toggleSecurityAlertSelected(this)" ${checked} style="width:auto;margin:0;">
+                            Select this alert
+                        </label>
                         ${photo}
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                             <h4 style="color:var(--danger);">${friendly(a.reason)}</h4>${badge}
@@ -1163,21 +1685,23 @@
                         <p><strong>Amount:</strong> RM ${parseFloat(a.amount || 0).toFixed(2)}</p>
                         <p style="font-size:12px;">${formatDate(a.timestamp)}</p>
                         <div style="display:flex;gap:8px;margin-top:10px;">
-                            <button onclick="toggleAlertResolved('${a.id}',${!a.resolved})" style="flex:1;background:${a.resolved ? 'var(--warning)' : 'var(--success)'};color:white;border:none;border-radius:6px;padding:8px;cursor:pointer;font-size:13px;font-weight:600;width:auto;margin:0;">${a.resolved ? '↩ Reopen' : '✓ Resolve'}</button>
-                            <button onclick="deleteAlert('${a.id}')" style="flex:1;background:var(--danger);color:white;border:none;border-radius:6px;padding:8px;cursor:pointer;font-size:13px;font-weight:600;width:auto;margin:0;">🗑 Delete</button>
+                            <button onclick="toggleAlertResolved('${a.id}',${!a.resolved})" style="flex:1;background:${a.resolved ? 'var(--warning)' : 'var(--success)'};color:white;border:none;border-radius:6px;padding:8px;cursor:pointer;font-size:13px;font-weight:600;width:auto;margin:0;">${a.resolved ? 'Reopen' : 'Resolve'}</button>
+                            <button onclick="deleteAlert('${a.id}')" style="flex:1;background:var(--danger);color:white;border:none;border-radius:6px;padding:8px;cursor:pointer;font-size:13px;font-weight:600;width:auto;margin:0;">Delete</button>
                         </div>
                     </div>`);
                 });
             }
+            window.latestSecurityAlertRecords = securityRecords;
+            pruneBulkSelection(window.selectedSecurityAlerts, new Set(securityRecords.map(a => a.id)));
             if (document.getElementById('admin-alert-count')) document.getElementById('admin-alert-count').innerText = unresolvedCount;
             const banner = document.getElementById('security-debt-alert');
             if (banner) banner.style.display = hasUnresolved ? 'block' : 'none';
             buildCarousel('snapshots-list', cards, 'No security alerts found.');
+            updateSecurityBulkUI();
         });
-
         // Camera logs
         onValue(ref(db, "vendingMachine/cameraLogs"), snap => {
-            let cards = [];
+            let cards = [], cameraRecords = [];
             if (snap.exists()) {
                 let logs = []; snap.forEach(c => { logs.push({ id: c.key, ...c.val() }); });
                 logs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
@@ -1186,19 +1710,27 @@
                     const user = l.userEmail || 'Unknown';
                     const stage = l.stage || '';
                     const reason = l.reason || '';
+                    const checked = window.selectedCameraLogs.has(l.id) ? 'checked' : '';
+                    cameraRecords.push({ id: l.id, imageUrl: img });
                     cards.push(`<div class="list-card" style="text-align:center;">
+                        <label style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;font-size:12px;font-weight:700;color:var(--primary);">
+                            <input type="checkbox" class="bulk-camera-check" data-id="${l.id}" data-image="${encodeURIComponent(img)}" onchange="toggleCameraLogSelected(this)" ${checked} style="width:auto;margin:0;">
+                            Select this photo
+                        </label>
                         <a href="${img}" target="_blank"><img src="${img}" style="width:100%;height:200px;border-radius:8px;object-fit:cover;border:1px solid var(--border);"></a>
                         <p style="margin:8px 0 0;font-size:14px;font-weight:600;">${stage}${reason ? ' · ' + reason : ''}</p>
                         <p style="font-size:13px;color:var(--text-light);">${formatDate(l.timestamp)}</p>
                         <p style="font-size:13px;color:var(--primary);font-weight:600;">${user}</p>
-                        <button onclick="deleteCameraLog('${l.id}','${img}')" style="margin-top:8px;background:var(--danger);color:white;border:none;border-radius:6px;padding:6px 16px;cursor:pointer;font-size:12px;font-weight:700;width:auto;">🗑 Delete</button>
+                        <button onclick="deleteCameraLog('${l.id}','${img}')" style="margin-top:8px;background:var(--danger);color:white;border:none;border-radius:6px;padding:6px 16px;cursor:pointer;font-size:12px;font-weight:700;width:auto;">Delete</button>
                     </div>`);
                 });
             }
+            window.latestCameraLogRecords = cameraRecords;
+            pruneBulkSelection(window.selectedCameraLogs, new Set(cameraRecords.map(l => l.id)));
             buildCarousel('camera-logs-list', cards,
                 "No camera logs yet. Photos appear here after the ESP32-CAM captures them. If blank during use, check the CAM's serial monitor and that state/camera/ip is set.");
+            updateCameraBulkUI();
         });
-
         startReviewListener();
 
         onValue(ref(db, `${mPath()}/security`), snap => {
@@ -1208,7 +1740,9 @@
             if (parseInt(s.notify_admin) === 1 || parseInt(s.alarm) === 1) {
                 banner.style.display = 'block';
                 const msg = document.getElementById('security-debt-msg');
-                if (msg) msg.innerHTML = `🚨 <strong>${s.notify_reason || 'Security event'}</strong> at the machine. <a href="#" onclick="switchView('snapshots-view')">View Security Alerts</a> then Emergency Reset if needed.`;
+                const reason = s.notify_reason || 'Security event';
+                if (msg) msg.innerHTML = `🚨 <strong>${reason}</strong> at the machine. <a href="#" onclick="switchView('snapshots-view')">View Security Alerts</a> then Emergency Reset if needed.`;
+                sendAdminAlertOnce(`machine-security:${reason}`, `Security alert at ${window.adminCurrentMachine}: ${reason}`, window.adminCurrentMachine);
             }
         });
     }
@@ -1266,6 +1800,8 @@
         if (!div) return;
         let list = window.reviewData;
         if (window.reviewFilter === 'flagged') list = list.filter(p => p.flagged && !p.resolved);
+        window.latestReviewPurchaseRecords = list.map(p => ({ id: p.id }));
+        pruneBulkSelection(window.selectedReviewPurchases, new Set(window.latestReviewPurchaseRecords.map(p => p.id)));
         const cards = list.map(p => {
             const u = window.usersData[p.uid] || {};
             const name = u.fullname || '(no name)';
@@ -1274,12 +1810,17 @@
             const charged = parseFloat(p.total || 0);
             const balanceAfter = parseFloat(p.balanceAfter || 0);
             const balanceBefore = p.balanceBefore !== undefined ? parseFloat(p.balanceBefore) : balanceAfter + charged;
-            const flagBadge = p.flagged ? `<span class="badge badge-red">⚠️ Suspicious</span>` : `<span class="badge badge-green">✓ OK</span>`;
+            const flagBadge = p.flagged ? `<span class="badge badge-red">Suspicious</span>` : `<span class="badge badge-green">OK</span>`;
             const resolvedBadge = p.resolved ? `<span class="badge badge-grey" style="margin-left:4px;">Resolved</span>` : '';
+            const checked = window.selectedReviewPurchases.has(p.id) ? 'checked' : '';
             let aiText = p.ai_verify && p.ai_verify !== 'pending' ? p.ai_verify : 'not checked';
             let aiColor = (p.ai_verify && p.ai_verify.toLowerCase().includes('mismatch')) ? 'var(--danger)' : 'var(--text-light)';
             return `
                 <div class="list-card ${p.flagged && !p.resolved ? 'alert-card' : ''}">
+                    <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;font-weight:700;color:var(--primary);">
+                        <input type="checkbox" class="bulk-review-check" data-id="${p.id}" onchange="toggleReviewPurchaseSelected(this)" ${checked} style="width:auto;margin:0;">
+                        Select this review
+                    </label>
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;">
                         <h4 style="flex:1;min-width:0;">${p.items}</h4>
                         <div style="flex-shrink:0;">${flagBadge}${resolvedBadge}</div>
@@ -1294,40 +1835,47 @@
                             <p style="font-size:11px;color:var(--text-light);margin:4px 0 0;">AFTER</p>
                         </div>
                     </div>
-                    <p><strong>${name}</strong> · ${p.email}</p>
-                    <p>Balance before: <strong>RM ${balanceBefore.toFixed(2)}</strong> · Charged: <strong>RM ${charged.toFixed(2)}</strong> · Balance after: <strong>RM ${balanceAfter.toFixed(2)}</strong></p>
+                    <p><strong>${name}</strong> - ${p.email}</p>
+                    <p>Balance before: <strong>RM ${balanceBefore.toFixed(2)}</strong> - Charged: <strong>RM ${charged.toFixed(2)}</strong> - Balance after: <strong>RM ${balanceAfter.toFixed(2)}</strong></p>
                     <p style="font-size:12px;color:var(--text-light);">${formatDate(p.timestamp)}</p>
                     <p style="color:${aiColor};font-size:13px;"><strong>AI check:</strong> ${aiText}</p>
                     <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
-                        <button onclick="runAICheck('${p.id}')" style="flex:1;background:#6f42c1;color:white;border:none;border-radius:6px;padding:8px;cursor:pointer;font-size:13px;font-weight:600;width:auto;margin:0;">🤖 AI Check</button>
-                        <button onclick="toggleResolved('${p.id}',${!p.resolved})" style="flex:1;background:${p.resolved ? 'var(--warning)' : 'var(--success)'};color:white;border:none;border-radius:6px;padding:8px;cursor:pointer;font-size:13px;font-weight:600;width:auto;margin:0;">${p.resolved ? '↩ Reopen' : '✓ Resolve'}</button>
-                        <button onclick="deletePurchase('${p.id}')" style="flex:1;background:var(--danger);color:white;border:none;border-radius:6px;padding:8px;cursor:pointer;font-size:13px;font-weight:600;width:auto;margin:0;">🗑 Delete</button>
+                        <button onclick="runAICheck('${p.id}')" style="flex:1;background:#6f42c1;color:white;border:none;border-radius:6px;padding:8px;cursor:pointer;font-size:13px;font-weight:600;width:auto;margin:0;">AI Check</button>
+                        <button onclick="toggleResolved('${p.id}',${!p.resolved})" style="flex:1;background:${p.resolved ? 'var(--warning)' : 'var(--success)'};color:white;border:none;border-radius:6px;padding:8px;cursor:pointer;font-size:13px;font-weight:600;width:auto;margin:0;">${p.resolved ? 'Reopen' : 'Resolve'}</button>
+                        <button onclick="deletePurchase('${p.id}')" style="flex:1;background:var(--danger);color:white;border:none;border-radius:6px;padding:8px;cursor:pointer;font-size:13px;font-weight:600;width:auto;margin:0;">Delete</button>
                     </div>
                 </div>`;
         });
         buildCarousel('review-list', cards, 'No purchases to review.');
+        updateReviewBulkUI();
     }
-
     window.toggleResolved = function (id, resolved) { set(ref(db, `${mPath()}/purchases/${id}/resolved`), resolved); };
     window.deletePurchase = async function (id) {
-        if (!await appConfirm({ icon: '🗑️', title: 'Delete Purchase', message: 'Delete this purchase record permanently?' })) return;
-        remove(ref(db, `${mPath()}/purchases/${id}`));
+        if (!await appConfirm({ icon: 'Delete', title: 'Delete Purchase', message: 'Delete this purchase record permanently?' })) return;
+        remove(ref(db, `${mPath()}/purchases/${id}`)).then(() => {
+            window.selectedReviewPurchases.delete(id);
+            updateReviewBulkUI();
+            appToast('Purchase review deleted', 'success');
+        }).catch(e => appToast('Delete failed: ' + e.message, 'error'));
     };
     window.toggleAlertResolved = function (id, resolved) { set(ref(db, `vendingMachine/securityAlerts/${id}/resolved`), resolved); };
     window.deleteAlert = async function (id) {
-        if (!await appConfirm({ icon: '🗑️', title: 'Delete Alert', message: 'Delete this security alert permanently?' })) return;
-        remove(ref(db, `vendingMachine/securityAlerts/${id}`));
+        if (!await appConfirm({ icon: 'Delete', title: 'Delete Alert', message: 'Delete this security alert permanently?' })) return;
+        remove(ref(db, `vendingMachine/securityAlerts/${id}`)).then(() => {
+            window.selectedSecurityAlerts.delete(id);
+            updateSecurityBulkUI();
+            appToast('Security alert deleted', 'success');
+        }).catch(e => appToast('Delete failed: ' + e.message, 'error'));
     };
     window.deleteCameraLog = async function (id, imageUrl) {
-        if (!await appConfirm({ icon: '🗑️', title: 'Delete Photo', message: 'Delete this photo permanently?' })) return;
-        remove(ref(db, `vendingMachine/cameraLogs/${id}`));
-        try {
-            const u = new URL(imageUrl);
-            const file = u.pathname.replace(/^\/photo/, '');
-            fetch(`http://${u.host}/delete?file=${encodeURIComponent(file)}`).catch(() => {});
-        } catch (e) {}
+        if (!await appConfirm({ icon: 'Delete', title: 'Delete Photo', message: 'Delete this photo permanently?' })) return;
+        remove(ref(db, `vendingMachine/cameraLogs/${id}`)).then(() => {
+            window.selectedCameraLogs.delete(id);
+            updateCameraBulkUI();
+            deleteCameraImageFile(imageUrl);
+            appToast('Photo deleted', 'success');
+        }).catch(e => appToast('Delete failed: ' + e.message, 'error'));
     };
-
     // ---------- TEST CAMERA CAPTURE ----------
     window.testCameraCapture = async function () {
         const btn = document.getElementById('test-cam-btn');

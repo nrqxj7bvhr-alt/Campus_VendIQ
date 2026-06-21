@@ -1,13 +1,13 @@
 {
-  "name": "Campus VendIQ",
-  "short_name": "VendIQ",
-  "description": "Smart cashless campus vending — buy, reload, and track your balance.",
+  "name": "UTM Smart Vending",
+  "short_name": "UTM Vending",
+  "description": "Cashless smart vending for UTM students — buy, reload, and track your balance.",
   "start_url": "app.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0b1f4d",
-  "theme_color": "#0b1f4d",
+  "background_color": "#0056b3",
+  "theme_color": "#0056b3",
   "icons": [
     { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ]

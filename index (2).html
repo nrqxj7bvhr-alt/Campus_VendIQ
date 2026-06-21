@@ -10,6 +10,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="UTM Vending">
     <link rel="apple-touch-icon" href="icon.svg">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         :root {
             --primary: #0056b3;
@@ -342,9 +344,17 @@
                     <span class="qb-icon">💳</span>
                     <div><div class="qb-label">Reload Balance</div><div class="qb-sub">Top up with Touch 'n Go</div></div>
                 </div>
+                <div class="quick-btn" onclick="switchView('transfer-view')" style="background:#0f766e;">
+                    <span class="qb-icon">↔</span>
+                    <div><div class="qb-label">Transfer Balance</div><div class="qb-sub">Send RM to another student</div></div>
+                </div>
                 <div class="quick-btn" onclick="switchView('history-view')" style="background:#6c757d;">
                     <span class="qb-icon">📜</span>
                     <div><div class="qb-label">Transaction History</div><div class="qb-sub">View past purchases &amp; top-ups</div></div>
+                </div>
+                <div class="quick-btn" onclick="switchView('map-view')" style="background:#6f42c1;">
+                    <span class="qb-icon">🗺️</span>
+                    <div><div class="qb-label">Find Machines</div><div class="qb-sub">Live campus map &amp; stock levels</div></div>
                 </div>
             </div>
 
@@ -421,6 +431,28 @@
         </div>
     </div>
 
+    <!-- ====== TRANSFER VIEW ====== -->
+    <div id="transfer-view" class="view" style="padding:0;">
+        <div class="app-bar">
+            <button class="back-btn-bar" onclick="switchView('home-view')">←</button>
+            <h1>Transfer Balance</h1>
+        </div>
+        <div style="padding:20px;">
+            <div class="balance-card" style="margin-bottom:20px;">
+                <div class="balance-label">Available to Transfer</div>
+                <div class="balance-amount">RM <span id="transfer-current-balance">0.00</span></div>
+                <div class="balance-sub">Friend-to-friend balance transfer</div>
+            </div>
+            <div class="card card-border">
+                <h3 style="margin-bottom:12px;font-size:15px;">Send to Friend</h3>
+                <input type="email" id="transfer-email" placeholder="Friend's @graduate.utm.my email">
+                <input type="number" id="transfer-amount" placeholder="Amount (RM)" min="0.50" step="0.50">
+                <button id="transfer-btn" onclick="transferBalance()" style="background:#0f766e;">Send Transfer</button>
+                <p id="transfer-msg" style="font-size:13px;margin-top:8px;color:var(--text-light);"></p>
+            </div>
+        </div>
+    </div>
+
     <!-- ====== BUY VIEW (choose machine) ====== -->
     <div id="buy-view" class="view" style="padding:0;">
         <div class="app-bar">
@@ -466,6 +498,25 @@
             <div id="dedicated-inventory-list">
                 <div class="loader"></div>
             </div>
+        </div>
+    </div>
+
+    <!-- ====== CAMPUS MAP VIEW ====== -->
+    <div id="map-view" class="view" style="padding:0;">
+        <div class="app-bar">
+            <button class="back-btn-bar" onclick="switchView('home-view')">←</button>
+            <h1>Campus Map</h1>
+        </div>
+        <div id="vending-map" style="width:100%;height:54vh;min-height:320px;z-index:1;"></div>
+        <div style="padding:16px;background:var(--card);z-index:2;box-shadow:0 -4px 12px rgba(0,0,0,0.08);border-radius:16px 16px 0 0;margin-top:-10px;position:relative;">
+            <h3 id="map-info-title">Select a Machine</h3>
+            <p id="map-info-desc" class="text-muted" style="font-size:13px;margin-top:4px;">Tap a map pin to see live stock and status.</p>
+            <div id="map-info-stock" style="margin-top:10px;"></div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+                <button id="map-directions-btn" style="display:none;width:100%;margin:0;background:#0f766e;" onclick="getDirectionsToMachine()">Directions</button>
+                <button id="map-go-btn" style="display:none;width:100%;margin:0;background:var(--primary);" onclick="selectMachine(window.selectedMapMachine, 'unlock-view')">Go to Machine</button>
+            </div>
+            <p id="map-directions-status" class="text-muted" style="display:none;font-size:12px;margin-top:8px;text-align:center;"></p>
         </div>
     </div>
 
@@ -632,6 +683,7 @@
     let currentUserData = {};
     window.currentMachineID = "Machine 1";
     const machinePath = () => `vendingMachine/machines/${window.currentMachineID}`;
+    function roundMoney(n) { return Math.round(Number(n || 0) * 100) / 100; }
 
     let inventoryUnsub = null;
     window.dynamicConfig = {};
@@ -822,6 +874,7 @@
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
         const t = document.getElementById(viewId);
         if (t) t.classList.add('active-view');
+        if (viewId === 'map-view' && window.initMap) window.initMap();
     };
 
     // ---------- AUTH MODE ----------
@@ -839,6 +892,209 @@
     }
     window.setAuthMode = setAuthMode;
 
+    // ---------- CAMPUS MAP LOGIC ----------
+    let mapInitialized = false;
+    let vendingMap = null;
+    let mapMarkers = [];
+    let userLocationMarker = null;
+    let mapRouteLine = null;
+    const MACHINE_MAP_ICON_URL = 'assets/vending-machine-map-icon.png';
+    window.selectedMapMachine = null;
+    window.selectedMapMachineInfo = null;
+
+    function getMachineMapIcon() {
+        return window.L.icon({
+            iconUrl: MACHINE_MAP_ICON_URL,
+            iconSize: [50, 45],
+            iconAnchor: [25, 43],
+            popupAnchor: [0, -40]
+        });
+    }
+
+    window.initMap = async function () {
+        if (!window.L) {
+            showToast('Map library is still loading. Please try again.', 'info');
+            return;
+        }
+        if (mapInitialized) {
+            setTimeout(() => vendingMap.invalidateSize(), 150);
+            return;
+        }
+
+        vendingMap = window.L.map('vending-map').setView([1.5583, 103.6420], 16);
+        window.L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(vendingMap);
+
+        try {
+            const snap = await get(ref(db, 'vendingMachine/machines'));
+            const bounds = [];
+            if (snap.exists()) {
+                snap.forEach(childSnap => {
+                    const mId = childSnap.key;
+                    const mData = childSnap.val() || {};
+                    const info = mData.info || {};
+                    const lat = parseFloat(info.lat) || 1.5583;
+                    const lng = parseFloat(info.lng) || 103.6420;
+                    const locName = info.locationName || 'Unknown Location';
+                    const marker = window.L.marker([lat, lng], { icon: getMachineMapIcon(), title: mId }).addTo(vendingMap);
+                    marker.bindPopup(`<strong>${mId}</strong><br>${locName}`);
+                    marker.on('click', () => fetchMachineDetailsForMap({ id: mId, name: mId, loc: locName, lat, lng }));
+                    mapMarkers.push(marker);
+                    bounds.push([lat, lng]);
+                });
+            }
+            if (bounds.length > 1) vendingMap.fitBounds(bounds, { padding: [24, 24], maxZoom: 17 });
+            else if (bounds.length === 1) vendingMap.setView(bounds[0], 17);
+        } catch (e) {
+            console.error('Error loading machines for map:', e);
+            document.getElementById('map-info-desc').innerText = 'Error loading machine locations.';
+        }
+
+        mapInitialized = true;
+        setTimeout(() => vendingMap.invalidateSize(), 150);
+    };
+
+    window.fetchMachineDetailsForMap = async function (machineInfo) {
+        window.selectedMapMachine = machineInfo.id;
+        window.selectedMapMachineInfo = machineInfo;
+        document.getElementById('map-info-title').innerText = `${machineInfo.name} (${machineInfo.loc})`;
+        document.getElementById('map-info-desc').innerText = 'Loading live data...';
+        document.getElementById('map-info-stock').innerHTML = "<div class='loader'></div>";
+        document.getElementById('map-go-btn').style.display = 'none';
+        document.getElementById('map-directions-btn').style.display = 'none';
+        const directionsStatus = document.getElementById('map-directions-status');
+        if (directionsStatus) { directionsStatus.style.display = 'none'; directionsStatus.textContent = ''; }
+
+        try {
+            const snap = await get(ref(db, `vendingMachine/machines/${machineInfo.id}`));
+            if (!snap.exists()) {
+                document.getElementById('map-info-desc').innerText = 'Status: ⚪ Not installed yet';
+                document.getElementById('map-info-stock').innerHTML = '';
+                return;
+            }
+            const data = snap.val() || {};
+            const state = data.state || {};
+            const now = Date.now() + (window.serverTimeOffset || 0);
+            const isOnline = state.heartbeat && (now - state.heartbeat < 120000);
+            const phase = state.phase || 'locked';
+            const busy = ['preparing', 'unlocked', 'user_taking', 'checkout_processing', 'checkout_done', 'reminder_open_door'].includes(phase);
+            const restock = phase.startsWith('restock');
+
+            let statusHtml = "<span style='color:var(--success);font-weight:700;'>🟢 Available</span>";
+            if (!isOnline) statusHtml = "<span style='color:var(--danger);font-weight:700;'>📵 Offline</span>";
+            else if (restock) statusHtml = "<span style='color:var(--warning);font-weight:700;'>🔧 Restocking</span>";
+            else if (busy) statusHtml = "<span style='color:var(--warning);font-weight:700;'>⏳ Busy</span>";
+            document.getElementById('map-info-desc').innerHTML = `Status: ${statusHtml}`;
+
+            const inv = data.inventory || {};
+            const items = [];
+            Object.keys(inv).forEach(key => {
+                const item = inv[key] || {};
+                if (key.startsWith('s') && item.name && parseInt(item.qty || 0) > 0 && parseInt(item.en || 1) !== 0) items.push(item);
+            });
+            items.sort((a, b) => parseInt(b.qty || 0) - parseInt(a.qty || 0));
+
+            let stockHtml = '';
+            if (items.length === 0) {
+                stockHtml = "<div class='text-muted' style='font-size:13px;text-align:center;'>Currently out of stock.</div>";
+            } else {
+                stockHtml = "<div style='font-size:11px;color:var(--text-light);margin-bottom:6px;font-weight:700;letter-spacing:0.5px;'>AVAILABLE NOW:</div>";
+                items.slice(0, 3).forEach(item => {
+                    stockHtml += `<div style='display:flex;justify-content:space-between;margin-bottom:6px;font-size:14px;background:var(--bg);padding:6px 10px;border-radius:6px;'>
+                        <span style="font-weight:600;">${item.name}</span>
+                        <span style='font-weight:800;color:var(--primary);'>${parseInt(item.qty || 0)} left</span>
+                    </div>`;
+                });
+                if (items.length > 3) stockHtml += `<div style='font-size:12px;color:var(--text-light);margin-top:6px;text-align:center;'>+ ${items.length - 3} more items available</div>`;
+            }
+            document.getElementById('map-info-stock').innerHTML = stockHtml;
+            const directionsBtn = document.getElementById('map-directions-btn');
+            if (directionsBtn && Number.isFinite(machineInfo.lat) && Number.isFinite(machineInfo.lng)) directionsBtn.style.display = 'block';
+            if (isOnline && items.length > 0 && !busy && !restock) document.getElementById('map-go-btn').style.display = 'block';
+        } catch (e) {
+            document.getElementById('map-info-desc').innerText = 'Error loading data.';
+            document.getElementById('map-info-stock').innerHTML = '';
+        }
+    };
+
+    function updateMapRoutePreview(origin, destination) {
+        if (!vendingMap || !window.L) return;
+        const originLatLng = [origin.lat, origin.lng];
+        const destLatLng = [destination.lat, destination.lng];
+        if (userLocationMarker) userLocationMarker.setLatLng(originLatLng);
+        else {
+            userLocationMarker = window.L.circleMarker(originLatLng, {
+                radius: 7,
+                color: '#2563eb',
+                fillColor: '#2563eb',
+                fillOpacity: 0.9,
+                weight: 3
+            }).addTo(vendingMap).bindPopup('You are here');
+        }
+        if (mapRouteLine) mapRouteLine.setLatLngs([originLatLng, destLatLng]);
+        else {
+            mapRouteLine = window.L.polyline([originLatLng, destLatLng], {
+                color: '#2563eb',
+                weight: 4,
+                opacity: 0.85,
+                dashArray: '7, 8'
+            }).addTo(vendingMap);
+        }
+        vendingMap.fitBounds([originLatLng, destLatLng], { padding: [28, 28], maxZoom: 17 });
+    }
+
+    function buildGoogleMapsDirectionsUrl(destination, origin) {
+        const params = new URLSearchParams({
+            api: '1',
+            destination: `${destination.lat},${destination.lng}`,
+            travelmode: 'walking'
+        });
+        if (origin) params.set('origin', `${origin.lat},${origin.lng}`);
+        return `https://www.google.com/maps/dir/?${params.toString()}`;
+    }
+
+    window.getDirectionsToMachine = function () {
+        const machine = window.selectedMapMachineInfo;
+        if (!machine) { showToast('Select a machine first.', 'info'); return; }
+        const destination = { lat: Number(machine.lat), lng: Number(machine.lng) };
+        if (!Number.isFinite(destination.lat) || !Number.isFinite(destination.lng)) {
+            showToast('This machine has no map location yet.', 'error');
+            return;
+        }
+        const status = document.getElementById('map-directions-status');
+        const setStatus = (text, color = 'var(--text-light)') => {
+            if (!status) return;
+            status.style.display = 'block';
+            status.style.color = color;
+            status.textContent = text;
+        };
+        let mapsWindow = null;
+        try { mapsWindow = window.open('about:blank', '_blank'); } catch (e) {}
+        const openDirections = (origin) => {
+            const url = buildGoogleMapsDirectionsUrl(destination, origin);
+            if (mapsWindow) mapsWindow.location.href = url;
+            else window.open(url, '_blank', 'noopener');
+        };
+        if (!navigator.geolocation) {
+            setStatus('Opening Google Maps directions.');
+            openDirections(null);
+            return;
+        }
+        setStatus('Finding your location...');
+        navigator.geolocation.getCurrentPosition(pos => {
+            const origin = {
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude
+            };
+            updateMapRoutePreview(origin, destination);
+            setStatus('Route preview shown. Google Maps opened.', 'var(--success)');
+            openDirections(origin);
+        }, () => {
+            setStatus('Location unavailable. Opening Google Maps to the machine.', 'var(--warning)');
+            openDirections(null);
+        }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+    };
     document.getElementById('signup-btn').addEventListener('click', () => {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
@@ -852,7 +1108,7 @@
             sendEmailVerification(cred.user).then(() => {
                 set(ref(db, 'users/' + cred.user.uid), { balance: 0.00, email, fullname });
                 err.style.color = 'green';
-                err.innerText = "Account created! Check your UTM email to verify before logging in.";
+                err.innerText = "Account created! You can log in now. Verification email was sent too.";
                 signOut(auth);
             });
         }).catch(e => { err.innerText = e.message; });
@@ -863,9 +1119,8 @@
         const password = document.getElementById('password').value;
         const err = document.getElementById('auth-error');
         err.innerText = "";
-        signInWithEmailAndPassword(auth, email, password).then(cred => {
-            if (!cred.user.emailVerified) { err.innerText = "Please verify your email first."; signOut(auth); }
-        }).catch(() => { err.innerText = "Invalid email or password."; });
+        signInWithEmailAndPassword(auth, email, password)
+            .catch(() => { err.innerText = "Invalid email or password."; });
     });
 
     document.getElementById('forgot-password-link').addEventListener('click', e => {
@@ -889,7 +1144,7 @@
     });
 
     onAuthStateChanged(auth, user => {
-        if (user && user.emailVerified) {
+        if (user) {
             currentUserUID = user.uid;
             switchView('home-view');
             listenToUserData();
@@ -917,6 +1172,12 @@
             .catch(e => showToast('Error: ' + e.message, 'error'));
     };
 
+    function isExpiredDate(dateStr) {
+        if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        return dateStr < today;
+    }
     // ---------- INVENTORY RENDER ----------
     window.renderStudentInventory = function () {
         const div = document.getElementById('dedicated-inventory-list');
@@ -933,9 +1194,15 @@
             const qty = c.qty !== undefined ? parseInt(c.qty) : 0;
             const max = c.max !== undefined ? parseInt(c.max) : 0;
             const price = c.price !== undefined ? parseFloat(c.price) : 0;
+            const expiry = c.expiry || "";
             const oos = qty === 0;
             const pct = max > 0 ? Math.min(100, Math.round(qty / max * 100)) : (oos ? 0 : 100);
             const barCls = oos ? 'out' : (max > 0 && qty <= max * 0.34 ? 'low' : '');
+            const expiryExpired = isExpiredDate(expiry);
+            const expiryColor = expiryExpired ? "var(--danger)" : "#2563eb";
+            const expiryBadge = expiry
+                ? `<div style="font-size:11px;color:${expiryColor};font-weight:700;margin-top:4px;">${expiryExpired ? "⚠️ Expired" : "Exp"}: ${expiry}</div>`
+                : "";
             // Affordability uses the already-loaded balance — no extra Firebase call.
             const affordTag = oos ? '' :
                 (activeUserBalance >= price
@@ -947,6 +1214,7 @@
                         <div>
                             <strong style="font-size:16px;">${name}</strong>
                             <div style="color:var(--text-light);font-size:13px;margin-top:2px;">RM ${price.toFixed(2)}</div>
+                            ${expiryBadge}
                         </div>
                         <div style="text-align:right;">
                             <span style="font-size:22px;font-weight:800;color:${oos ? 'var(--danger)' : 'var(--primary)'};">${qty}</span>
@@ -972,6 +1240,88 @@
         });
         return min === Infinity ? null : min;
     }
+
+    window.transferBalance = async function () {
+        const emailInput = document.getElementById('transfer-email');
+        const amountInput = document.getElementById('transfer-amount');
+        const msg = document.getElementById('transfer-msg');
+        const btn = document.getElementById('transfer-btn');
+        const targetEmail = (emailInput.value || '').trim().toLowerCase();
+        const amount = roundMoney(parseFloat(amountInput.value));
+        msg.style.color = 'var(--danger)';
+        msg.innerText = '';
+        if (!targetEmail || !targetEmail.endsWith('@graduate.utm.my')) { msg.innerText = 'Enter your friend\'s @graduate.utm.my email.'; return; }
+        if (!amount || amount <= 0) { msg.innerText = 'Enter a valid amount.'; return; }
+        if (amount > activeUserBalance) { msg.innerText = `You only have RM ${activeUserBalance.toFixed(2)} available.`; return; }
+        if (!auth.currentUser || !currentUserUID) { msg.innerText = 'Session expired. Please log in again.'; return; }
+        if (targetEmail === (auth.currentUser.email || '').toLowerCase()) { msg.innerText = 'You cannot transfer to yourself.'; return; }
+        if (window.debtLock || activeUserBalance < 0) { msg.innerText = 'Clear your outstanding balance before transferring.'; return; }
+
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+        try {
+            const usersSnap = await get(ref(db, 'users'));
+            let targetUid = null, targetData = null;
+            if (usersSnap.exists()) {
+                usersSnap.forEach(child => {
+                    const u = child.val() || {};
+                    if (!targetUid && (u.email || '').toLowerCase() === targetEmail) {
+                        targetUid = child.key;
+                        targetData = u;
+                    }
+                });
+            }
+            if (!targetUid) { throw new Error('No student found with that email.'); }
+
+            const senderRef = ref(db, `users/${currentUserUID}/balance`);
+            const senderTx = await runTransaction(senderRef, cur => {
+                const bal = roundMoney(parseFloat(cur || 0));
+                if (bal < amount) return;
+                return roundMoney(bal - amount);
+            });
+            if (!senderTx.committed) { throw new Error('Insufficient balance.'); }
+            const senderAfter = roundMoney(senderTx.snapshot.val());
+            const senderBefore = roundMoney(senderAfter + amount);
+
+            let receiverAfter = 0, receiverBefore = 0;
+            try {
+                const receiverTx = await runTransaction(ref(db, `users/${targetUid}/balance`), cur => roundMoney(parseFloat(cur || 0) + amount));
+                if (!receiverTx.committed) throw new Error('Receiver balance update failed.');
+                receiverAfter = roundMoney(receiverTx.snapshot.val());
+                receiverBefore = roundMoney(receiverAfter - amount);
+            } catch (e) {
+                await runTransaction(senderRef, cur => roundMoney(parseFloat(cur || 0) + amount));
+                throw e;
+            }
+
+            const senderName = currentUserData.fullname || auth.currentUser.email;
+            const targetName = targetData.fullname || targetEmail;
+            const ts = Date.now();
+            await Promise.all([
+                set(push(ref(db, `users/${currentUserUID}/history`)), {
+                    type: 'transfer_out', item: `Transferred to ${targetName}`, amount,
+                    balanceBefore: senderBefore, balanceAfter: senderAfter,
+                    targetUid, targetEmail, timestamp: ts
+                }),
+                set(push(ref(db, `users/${targetUid}/history`)), {
+                    type: 'transfer_in', item: `Received from ${senderName}`, amount,
+                    balanceBefore: receiverBefore, balanceAfter: receiverAfter,
+                    senderUid: currentUserUID, senderEmail: auth.currentUser.email, timestamp: ts
+                })
+            ]);
+            msg.style.color = 'var(--success)';
+            msg.innerText = `Sent RM ${amount.toFixed(2)} to ${targetName}.`;
+            amountInput.value = '';
+            emailInput.value = '';
+            showToast('Transfer complete ✅', 'success');
+        } catch (e) {
+            msg.style.color = 'var(--danger)';
+            msg.innerText = e.message || 'Transfer failed.';
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Send Transfer';
+        }
+    };
 
     function listenToUserData() {
         attachMachineListeners();
@@ -999,6 +1349,7 @@
             if (document.getElementById('user-balance')) document.getElementById('user-balance').innerText = f;
             if (document.getElementById('current-balance-display')) document.getElementById('current-balance-display').innerText = f;
             if (document.getElementById('unlock-balance')) document.getElementById('unlock-balance').innerText = f;
+            if (document.getElementById('transfer-current-balance')) document.getElementById('transfer-current-balance').innerText = f;
             if (document.getElementById('pir-balance')) document.getElementById('pir-balance').innerText = 'RM ' + f;
 
             const statusText = document.getElementById('balance-status-text');
@@ -1031,14 +1382,19 @@
             items = items.slice(0, 10);   // user view: only the 10 most recent
             items.forEach(d => {
                 const dateStr = new Date(d.timestamp).toLocaleString('en-MY');
-                const isTopup = d.type === 'topup';
-                const priceStr = isTopup ? `+ RM ${parseFloat(d.amount || 0).toFixed(2)}` : `- RM ${parseFloat(d.cost || 0).toFixed(2)}`;
-                const badgeColor = isTopup ? 'var(--primary)' : 'var(--danger)';
-                const machineInfo = d.machine ? ` · ${d.machine}` : (!isTopup ? ' · Machine 1' : "");
+                const type = d.type || 'purchase';
+                const isTopup = type === 'topup';
+                const isTransferIn = type === 'transfer_in';
+                const isTransferOut = type === 'transfer_out';
+                const amount = parseFloat((isTopup || isTransferIn || isTransferOut) ? d.amount || 0 : d.cost || 0);
+                const priceStr = (isTopup || isTransferIn) ? `+ RM ${amount.toFixed(2)}` : `- RM ${amount.toFixed(2)}`;
+                const badgeColor = isTopup ? 'var(--primary)' : isTransferIn ? 'var(--success)' : isTransferOut ? '#64748b' : 'var(--danger)';
+                const machineInfo = d.machine ? ` · ${d.machine}` : (type === 'purchase' ? ' · Machine 1' : "");
                 const balAfter = parseFloat(d.balanceAfter || 0);
+                const delta = (isTopup || isTransferIn) ? amount : -amount;
                 const balBefore = d.balanceBefore !== undefined
                     ? parseFloat(d.balanceBefore)
-                    : (isTopup ? balAfter - parseFloat(d.amount || 0) : balAfter + parseFloat(d.cost || 0));
+                    : balAfter - delta;
                 list.innerHTML += `
                     <div class="history-item">
                         <div class="hi-top">
