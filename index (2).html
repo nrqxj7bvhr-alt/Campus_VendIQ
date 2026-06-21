@@ -3,53 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Campus VendIQ</title>
+    <title>UTM Smart Vending</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1559d6">
+    <meta name="theme-color" content="#0056b3">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="VendIQ">
+    <meta name="apple-mobile-web-app-title" content="UTM Vending">
     <link rel="apple-touch-icon" href="icon.svg">
     <style>
         :root {
-            --primary: #1559d6;
-            --primary-2: #3b82f6;
-            --primary-dark: #103fa3;
-            --primary-light: #e9f0fe;
-            --accent: #06b6d4;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --success: #16a34a;
-            --bg: #eef2f9;
+            --primary: #0056b3;
+            --primary-dark: #003d80;
+            --primary-light: #e8f0fb;
+            --accent: #17a2b8;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --success: #28a745;
+            --bg: #f0f2f5;
             --card: #ffffff;
-            --text: #0f172a;
-            --text-light: #64748b;
-            --border: #e6eaf2;
-            --grad: linear-gradient(135deg, #2563eb 0%, #1559d6 55%, #103fa3 100%);
-            --shadow: 0 2px 10px rgba(15,23,42,0.06);
-            --shadow-md: 0 6px 18px rgba(15,23,42,0.09);
-            --shadow-lg: 0 14px 34px rgba(15,23,42,0.14);
-            --radius: 16px;
+            --text: #333333;
+            --text-light: #6c757d;
+            --border: #dee2e6;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+            --shadow-lg: 0 8px 16px rgba(0,0,0,0.12);
+            --radius: 10px;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, 'Segoe UI', system-ui, sans-serif; background: var(--bg);
-            min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; color: var(--text); }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; }
 
-        .app-shell { width: 100%; max-width: 430px; min-height: 100vh; background: var(--bg);
-            box-shadow: var(--shadow-lg); display: flex; flex-direction: column; position: relative; }
-
-        /* ---- SPLASH (shown until auth resolves — kills the login-page flash) ---- */
-        #splash { position: fixed; inset: 0; z-index: 6000; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; gap: 18px; color: #fff; transition: opacity .35s ease;
-            background: radial-gradient(120% 90% at 80% -10%, #1e3a8a 0%, #0b1f4d 60%, #081538 100%); }
-        #splash.hide { opacity: 0; pointer-events: none; }
-        #splash .s-badge { width: 78px; height: 78px; border-radius: 22px; font-size: 40px; display: flex;
-            align-items: center; justify-content: center; background: linear-gradient(150deg,#38bdf8,#2563eb);
-            box-shadow: 0 16px 40px rgba(2,12,40,.5); }
-        #splash .s-name { font-size: 23px; font-weight: 800; letter-spacing: -.3px; }
-        #splash .s-name .iq { color: #22d3ee; }
-        #splash .s-spin { width: 26px; height: 26px; border: 3px solid rgba(255,255,255,.3);
-            border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; }
+        .app-shell { width: 100%; max-width: 420px; min-height: 100vh; background: var(--card); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; position: relative; }
 
         /* ---- VIEWS ---- */
         .view { display: none; padding: 20px; flex: 1; }
@@ -59,17 +42,16 @@
 
         /* ---- HEADER BAR (inside logged-in views) ---- */
         .app-bar {
-            background: var(--grad); color: white;
-            padding: 16px 18px; display: flex; align-items: center; gap: 12px;
-            position: sticky; top: 0; z-index: 10; box-shadow: 0 4px 18px rgba(21,89,214,0.28);
+            background: var(--primary); color: white;
+            padding: 14px 18px; display: flex; align-items: center; gap: 12px;
+            position: sticky; top: 0; z-index: 10;
         }
-        .app-bar h1 { font-size: 17px; font-weight: 800; flex: 1; letter-spacing: -.2px; }
+        .app-bar h1 { font-size: 17px; font-weight: 700; flex: 1; }
         .app-bar .avatar {
-            width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.22);
-            display: flex; align-items: center; justify-content: center; font-size: 17px; cursor: pointer;
-            flex-shrink: 0; border: 1px solid rgba(255,255,255,0.3); transition: background .15s;
+            width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.25);
+            display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer;
+            flex-shrink: 0;
         }
-        .app-bar .avatar:active { background: rgba(255,255,255,0.4); }
         .back-btn-bar {
             background: none; border: none; color: white; font-size: 22px; cursor: pointer;
             padding: 0; width: auto; margin: 0; line-height: 1; flex-shrink: 0;
@@ -82,29 +64,28 @@
 
         /* ---- INPUTS ---- */
         input, select {
-            width: 100%; padding: 13px 15px; border: 1.6px solid var(--border);
-            border-radius: 12px; font-size: 15px; color: var(--text);
-            background: #f8fafc; margin-bottom: 10px; transition: border-color .15s, box-shadow .15s, background .15s;
+            width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
+            border-radius: 8px; font-size: 15px; color: var(--text);
+            background: white; margin-bottom: 10px; transition: border-color 0.2s;
             box-sizing: border-box;
         }
-        input:focus, select:focus { outline: none; border-color: var(--primary-2); background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.12); }
+        input:focus, select:focus { outline: none; border-color: var(--primary); }
 
         /* ---- BUTTONS ---- */
         button {
-            width: 100%; padding: 14px; background: var(--grad); color: white;
-            border: none; border-radius: 13px; cursor: pointer; font-size: 15px;
-            font-weight: 800; transition: filter .15s, transform .1s, box-shadow .15s; margin-top: 8px;
-            box-shadow: 0 8px 20px rgba(21,89,214,0.28);
+            width: 100%; padding: 13px; background: var(--primary); color: white;
+            border: none; border-radius: 8px; cursor: pointer; font-size: 15px;
+            font-weight: 700; transition: background 0.15s, transform 0.1s; margin-top: 8px;
         }
-        button:hover { filter: brightness(1.05); }
+        button:hover { filter: brightness(88%); }
         button:active { transform: scale(0.98); }
-        .btn-accent { background: var(--accent); box-shadow: 0 8px 20px rgba(6,182,212,0.28); }
-        .btn-danger { background: var(--danger); box-shadow: 0 8px 20px rgba(239,68,68,0.28); }
-        .btn-warning { background: linear-gradient(135deg, #fbbf24, #f59e0b); box-shadow: 0 8px 20px rgba(245,158,11,0.3); }
-        .btn-secondary { background: #64748b; box-shadow: none; }
-        .btn-outline { background: none !important; color: var(--primary); border: 2px solid var(--primary); box-shadow: none; }
+        .btn-accent { background: var(--accent); }
+        .btn-danger { background: var(--danger); }
+        .btn-warning { background: var(--warning); }
+        .btn-secondary { background: #64748b; }
+        .btn-outline { background: none !important; color: var(--primary); border: 2px solid var(--primary); }
         .btn-outline:hover { background: var(--primary-light) !important; filter: none; }
-        .btn-sm { padding: 8px 14px; font-size: 13px; margin-top: 0; width: auto; box-shadow: none; }
+        .btn-sm { padding: 7px 14px; font-size: 13px; margin-top: 0; width: auto; }
         .btn-lg { padding: 16px; font-size: 17px; }
 
         /* ---- CARDS ---- */
@@ -113,42 +94,36 @@
 
         /* ---- BALANCE CARD ---- */
         .balance-card {
-            background: var(--grad);
-            color: white; border-radius: 20px; padding: 24px 22px;
-            margin-bottom: 18px; position: relative; overflow: hidden;
-            box-shadow: 0 16px 36px rgba(21,89,214,0.32);
+            background: linear-gradient(135deg, #0056b3, #003d80);
+            color: white; border-radius: var(--radius); padding: 22px 20px;
+            margin-bottom: 16px; position: relative; overflow: hidden;
         }
         .balance-card::before {
-            content: ''; position: absolute; top: -40px; right: -30px;
-            width: 150px; height: 150px; border-radius: 50%;
-            background: radial-gradient(circle, rgba(34,211,238,0.35), transparent 70%);
-        }
-        .balance-card::after {
-            content: ''; position: absolute; bottom: -30px; right: 50px;
-            width: 90px; height: 90px; border-radius: 50%;
+            content: ''; position: absolute; top: -30px; right: -30px;
+            width: 110px; height: 110px; border-radius: 50%;
             background: rgba(255,255,255,0.08);
         }
-        .balance-card > * { position: relative; z-index: 1; }
-        .balance-label { font-size: 12px; opacity: 0.9; margin-bottom: 6px; letter-spacing: 1px; text-transform: uppercase; }
-        .balance-amount { font-size: 42px; font-weight: 800; letter-spacing: -1.5px; }
-        .balance-sub { font-size: 12.5px; opacity: 0.8; margin-top: 6px; }
+        .balance-card::after {
+            content: ''; position: absolute; bottom: -20px; right: 40px;
+            width: 70px; height: 70px; border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+        }
+        .balance-label { font-size: 13px; opacity: 0.85; margin-bottom: 4px; }
+        .balance-amount { font-size: 38px; font-weight: 800; letter-spacing: -1px; }
+        .balance-sub { font-size: 12px; opacity: 0.75; margin-top: 4px; }
 
         /* ---- QUICK ACTIONS ---- */
-        .quick-grid { display: flex; flex-direction: column; gap: 11px; margin-bottom: 18px; }
+        .quick-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
         .quick-btn {
-            background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 15px;
-            padding: 15px 16px; text-align: left; cursor: pointer; transition: transform .12s, box-shadow .15s;
-            box-shadow: var(--shadow); display: flex; align-items: center; gap: 14px; width: 100%;
+            background: var(--primary); color: white; border: none; border-radius: 8px;
+            padding: 14px 16px; text-align: left; cursor: pointer; transition: 0.15s;
+            box-shadow: var(--shadow); display: flex; align-items: center; gap: 14px;
+            width: 100%;
         }
-        .quick-btn:hover { box-shadow: var(--shadow-md); filter: none; transform: translateY(-1px); }
-        .quick-btn:active { transform: scale(0.99); }
-        .quick-btn .qb-icon {
-            font-size: 22px; flex-shrink: 0; width: 46px; height: 46px; border-radius: 13px;
-            display: flex; align-items: center; justify-content: center; color: #fff;
-        }
-        .quick-btn .qb-label { font-size: 15.5px; font-weight: 700; color: var(--text); }
-        .quick-btn .qb-sub { font-size: 12px; color: var(--text-light); margin-top: 1px; }
-        .quick-btn .qb-chev { margin-left: auto; color: var(--text-light); font-size: 18px; opacity: .5; }
+        .quick-btn:hover { background: var(--primary-dark); filter: none; }
+        .quick-btn .qb-icon { font-size: 24px; flex-shrink: 0; }
+        .quick-btn .qb-label { font-size: 16px; font-weight: 700; color: white; }
+        .quick-btn .qb-sub { font-size: 12px; color: rgba(255,255,255,0.75); margin-top: 1px; }
 
         /* ---- LIST ITEMS ---- */
         .list-item {
@@ -220,21 +195,20 @@
         .history-item .hi-meta { font-size: 12px; color: var(--text-light); margin-top: 2px; }
 
         /* ---- PROFILE ---- */
-        .profile-avatar { width: 76px; height: 76px; border-radius: 50%; background: var(--grad); color: white; font-size: 32px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; box-shadow: 0 10px 24px rgba(21,89,214,0.3); }
+        .profile-avatar { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg,#0056b3,#003d80); color: white; font-size: 30px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
         .profile-info-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
         .profile-info-row:last-child { border-bottom: none; }
         .pir-label { color: var(--text-light); font-size: 13px; }
         .pir-value { font-weight: 600; color: var(--text); }
 
         /* ---- LOGIN ---- */
-        .login-hero { background: var(--grad); padding: 46px 24px 30px; text-align: center; color: white; border-radius: 0 0 28px 28px; }
-        .login-hero .app-name { font-size: 27px; font-weight: 800; margin-bottom: 4px; letter-spacing: -.4px; }
-        .login-hero .app-name .iq { color: var(--accent); }
-        .login-hero .app-tagline { font-size: 12.5px; opacity: 0.88; letter-spacing: 2px; text-transform: uppercase; }
+        .login-hero { background: linear-gradient(160deg,#0056b3,#003d80); padding: 40px 24px 28px; text-align: center; color: white; }
+        .login-hero .app-name { font-size: 26px; font-weight: 800; margin-bottom: 4px; }
+        .login-hero .app-tagline { font-size: 14px; opacity: 0.85; }
         .login-body { padding: 24px; }
-        .auth-tabs { display: flex; gap: 4px; margin-bottom: 20px; border-radius: 12px; padding: 5px; background: var(--primary-light); }
-        .auth-tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-size: 14px; font-weight: 700; color: var(--text-light); background: transparent; border-radius: 9px; transition: 0.15s; }
-        .auth-tab.active { background: #fff; color: var(--primary); box-shadow: 0 2px 8px rgba(21,89,214,0.15); }
+        .auth-tabs { display: flex; gap: 0; margin-bottom: 20px; border-radius: 8px; overflow: hidden; border: 1.5px solid var(--border); }
+        .auth-tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-size: 14px; font-weight: 700; color: var(--text-light); background: var(--card); transition: 0.15s; }
+        .auth-tab.active { background: var(--primary); color: white; }
 
         /* ---- NEGATIVE BALANCE MODAL ---- */
         #negative-balance-modal .modal-box { border: 2px solid var(--danger); }
@@ -312,19 +286,12 @@
 <body>
 <div class="app-shell">
 
-    <!-- SPLASH (prevents login-page flash when arriving already authenticated) -->
-    <div id="splash">
-        <div class="s-badge">🛒</div>
-        <div class="s-name">Campus Vend<span class="iq">IQ</span></div>
-        <div class="s-spin"></div>
-    </div>
-
     <!-- ====== LOGIN VIEW ====== -->
     <div id="login-view" class="view active-view" style="padding:0;">
         <div class="login-hero">
-            <div style="font-size:46px;margin-bottom:6px;">🛒</div>
-            <div class="app-name">Campus Vend<span class="iq">IQ</span></div>
-            <div class="app-tagline">Smart · Cashless · Campus</div>
+            <div style="font-size:48px;margin-bottom:8px;">🏪</div>
+            <div class="app-name">UTM Smart Vending</div>
+            <div class="app-tagline">Fast · Cashless · Smart</div>
         </div>
         <div class="login-body">
             <div class="auth-tabs">
@@ -332,7 +299,7 @@
                 <div class="auth-tab" id="tab-signup" onclick="setAuthMode('signup')">Create Account</div>
             </div>
             <p id="auth-subtitle" style="font-size:13px;color:var(--text-light);margin-bottom:14px;"></p>
-            <input type="email" id="email" placeholder="University Email (@graduate.utm.my)">
+            <input type="email" id="email" placeholder="Student Email (@graduate.utm.my)">
             <div class="pw-wrap">
                 <input type="password" id="password" placeholder="Password (min 6 chars)" style="padding-right:42px;">
                 <span class="pw-toggle" id="pw-toggle" onclick="togglePassword()" title="Show / hide password">👁</span>
@@ -350,11 +317,11 @@
     <!-- ====== HOME VIEW ====== -->
     <div id="home-view" class="view" style="padding:0;">
         <div class="app-bar">
-            <h1>🛒 Campus VendIQ</h1>
+            <h1>🏪 UTM Vending</h1>
             <div class="avatar" onclick="switchView('profile-view')" title="Profile">👤</div>
         </div>
         <div style="padding:18px;">
-            <p id="welcome-name" style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:14px;">Welcome!</p>
+            <p id="welcome-name" style="font-size:14px;color:var(--text-light);margin-bottom:14px;">Welcome!</p>
 
             <div class="balance-card">
                 <div class="balance-label">Available Balance</div>
@@ -363,25 +330,21 @@
             </div>
 
             <div class="quick-grid">
-                <div class="quick-btn" onclick="switchView('buy-view')">
-                    <span class="qb-icon" style="background:linear-gradient(135deg,#22c55e,#16a34a);">🛒</span>
+                <div class="quick-btn" onclick="switchView('buy-view')" style="background:#28a745;">
+                    <span class="qb-icon">🛒</span>
                     <div><div class="qb-label">Buy Items</div><div class="qb-sub">Unlock the vending machine</div></div>
-                    <span class="qb-chev">›</span>
                 </div>
-                <div class="quick-btn" onclick="switchView('check-machine-view')">
-                    <span class="qb-icon" style="background:linear-gradient(135deg,#22d3ee,#06b6d4);">📦</span>
+                <div class="quick-btn" onclick="switchView('check-machine-view')" style="background:#17a2b8;">
+                    <span class="qb-icon">📦</span>
                     <div><div class="qb-label">Check Stock</div><div class="qb-sub">View item availability</div></div>
-                    <span class="qb-chev">›</span>
                 </div>
-                <div class="quick-btn" onclick="switchView('topup-view')">
-                    <span class="qb-icon" style="background:linear-gradient(135deg,#3b82f6,#1559d6);">💳</span>
+                <div class="quick-btn" onclick="switchView('topup-view')" style="background:#0056b3;">
+                    <span class="qb-icon">💳</span>
                     <div><div class="qb-label">Reload Balance</div><div class="qb-sub">Top up with Touch 'n Go</div></div>
-                    <span class="qb-chev">›</span>
                 </div>
-                <div class="quick-btn" onclick="switchView('history-view')">
-                    <span class="qb-icon" style="background:linear-gradient(135deg,#94a3b8,#64748b);">📜</span>
-                    <div><div class="qb-label">Transaction History</div><div class="qb-sub">Past purchases &amp; top-ups</div></div>
-                    <span class="qb-chev">›</span>
+                <div class="quick-btn" onclick="switchView('history-view')" style="background:#6c757d;">
+                    <span class="qb-icon">📜</span>
+                    <div><div class="qb-label">Transaction History</div><div class="qb-sub">View past purchases &amp; top-ups</div></div>
                 </div>
             </div>
 
@@ -560,7 +523,9 @@
                     <div class="receipt-item-name" id="receipt-item">–</div>
                     <div class="receipt-total">- RM <span id="receipt-price">0.00</span></div>
                     <hr style="border:none;border-top:1px dashed var(--border);margin:12px 0;">
-                    <p style="font-size:14px;color:var(--text-light);">Remaining Balance</p>
+                    <p style="font-size:13px;color:var(--text-light);">Balance before</p>
+                    <p style="font-size:16px;font-weight:800;color:var(--text);">RM <span id="receipt-bal-before">0.00</span></p>
+                    <p style="font-size:13px;color:var(--text-light);margin-top:6px;">Balance after</p>
                     <p style="font-size:22px;font-weight:800;color:var(--primary);">RM <span id="receipt-bal">0.00</span></p>
                 </div>
                 <button onclick="resetUnlockView()" style="background:var(--primary);">🏠 Return to Dashboard</button>
@@ -616,7 +581,9 @@
             <div class="receipt-item-name" id="lr-item">–</div>
             <div class="receipt-total" id="lr-total" style="color:var(--primary);">- RM 0.00</div>
             <hr style="border:none;border-top:1px dashed var(--border);margin:12px 0;">
-            <p style="font-size:13px;color:var(--text-light);">Balance after</p>
+            <p style="font-size:13px;color:var(--text-light);">Balance before</p>
+            <p style="font-size:16px;font-weight:800;color:var(--text);" id="lr-bal-before">RM 0.00</p>
+            <p style="font-size:13px;color:var(--text-light);margin-top:6px;">Balance after</p>
             <p style="font-size:20px;font-weight:800;color:var(--primary);" id="lr-bal">RM 0.00</p>
             <p class="text-muted" id="lr-machine" style="margin-top:8px;font-size:12px;">–</p>
         </div>
@@ -723,7 +690,10 @@
         if (!r) { showToast('No recent receipt found yet.', 'info'); return; }
         document.getElementById('lr-item').innerText = r.item || '–';
         document.getElementById('lr-total').innerText = '- RM ' + Number(r.cost || 0).toFixed(2);
-        document.getElementById('lr-bal').innerText = 'RM ' + Number(r.bal || 0).toFixed(2);
+        const lrBalAfter = Number(r.bal || 0);
+        const lrBalBefore = r.balanceBefore !== undefined ? Number(r.balanceBefore) : lrBalAfter + Number(r.cost || 0);
+        document.getElementById('lr-bal-before').innerText = 'RM ' + lrBalBefore.toFixed(2);
+        document.getElementById('lr-bal').innerText = 'RM ' + lrBalAfter.toFixed(2);
         document.getElementById('lr-date').innerText = r.ts ? new Date(r.ts).toLocaleString('en-MY') : '';
         document.getElementById('lr-machine').innerText = r.machine ? ('📍 ' + r.machine) : '';
         document.getElementById('receipt-modal').style.display = 'flex';
@@ -912,7 +882,7 @@
     document.getElementById('logout-btn').addEventListener('click', () => {
         appConfirm({
             icon: '🚪', title: 'Log Out',
-            message: 'Are you sure you want to log out of Campus VendIQ?',
+            message: 'Are you sure you want to log out of UTM Smart Vending?',
             confirmText: 'Log Out',
             onConfirm: () => signOut(auth)
         });
@@ -928,13 +898,7 @@
             setAuthMode('login');
             switchView('login-view');
         }
-        // Reveal the app only after auth is resolved → no flash of the login page
-        // when arriving already signed-in from the combined login (app.html).
-        const sp = document.getElementById('splash');
-        if (sp) setTimeout(() => sp.classList.add('hide'), 150);
     });
-    // Safety: never leave the splash up forever if auth is slow or unreachable.
-    setTimeout(() => document.getElementById('splash')?.classList.add('hide'), 4500);
 
     // ---------- PROFILE ----------
     window.saveFullName = function () {
@@ -1071,13 +1035,17 @@
                 const priceStr = isTopup ? `+ RM ${parseFloat(d.amount || 0).toFixed(2)}` : `- RM ${parseFloat(d.cost || 0).toFixed(2)}`;
                 const badgeColor = isTopup ? 'var(--primary)' : 'var(--danger)';
                 const machineInfo = d.machine ? ` · ${d.machine}` : (!isTopup ? ' · Machine 1' : "");
+                const balAfter = parseFloat(d.balanceAfter || 0);
+                const balBefore = d.balanceBefore !== undefined
+                    ? parseFloat(d.balanceBefore)
+                    : (isTopup ? balAfter - parseFloat(d.amount || 0) : balAfter + parseFloat(d.cost || 0));
                 list.innerHTML += `
                     <div class="history-item">
                         <div class="hi-top">
                             <span class="hi-name">${d.item}</span>
                             <span class="badge" style="background:${badgeColor};flex-shrink:0;">${priceStr}</span>
                         </div>
-                        <div class="hi-meta">${dateStr}${machineInfo} · Bal after: RM ${parseFloat(d.balanceAfter || 0).toFixed(2)}</div>
+                        <div class="hi-meta">${dateStr}${machineInfo} · Before: RM ${balBefore.toFixed(2)} · After: RM ${balAfter.toFixed(2)}</div>
                     </div>`;
             });
             if (totalCount > 10) {
@@ -1200,13 +1168,14 @@
                 if (co.status === "done" && co.session === sessionId) {
                     unsub();
                     if (window.phaseUnsub) window.phaseUnsub();
-                    settleCheckout(co, sessionId, base);
+                    settleCheckout(co, sessionId, base).catch(console.error);
                 }
             });
         });
     });
 
-    function settleCheckout(co, sessionId, base) {
+    async function settleCheckout(co, sessionId, base) {
+        const money = n => Math.round(Number(n || 0) * 100) / 100;
         const slots = co.slot || {};
         let parts = [], totalCost = 0, suspicious = false;
         Object.keys(slots).sort().forEach(k => {
@@ -1224,17 +1193,22 @@
             parts = [co.items]; totalCost = parseFloat(co.total || 0);
         }
         const description = parts.length ? parts.join(", ") : "No items taken";
-        totalCost = Math.round(totalCost * 100) / 100;
-        const newBalance = activeUserBalance - totalCost;
+        totalCost = money(totalCost);
 
-        set(ref(db, 'users/' + currentUserUID + '/balance'), newBalance);
+        // Deduct from the real Firebase value, then store balanceBefore + balanceAfter.
+        const balTx = await runTransaction(ref(db, 'users/' + currentUserUID + '/balance'), cur => {
+            return money(parseFloat(cur || 0) - totalCost);
+        });
+        const newBalance = money(balTx.snapshot.val());
+        const balanceBefore = money(newBalance + totalCost);
+
         const h = push(ref(db, 'users/' + currentUserUID + '/history'));
-        set(h, { item: description, cost: totalCost, balanceAfter: newBalance, machine: window.currentMachineID, timestamp: Date.now() });
+        await set(h, { item: description, cost: totalCost, balanceBefore, balanceAfter: newBalance, machine: window.currentMachineID, timestamp: Date.now() });
 
         const p = push(ref(db, `${base}/purchases`));
-        set(p, {
+        await set(p, {
             session: sessionId, uid: currentUserUID, email: auth.currentUser.email,
-            items: description, total: totalCost, balanceAfter: newBalance,
+            items: description, total: totalCost, balanceBefore, balanceAfter: newBalance,
             before_url: co.before_url || "", after_url: co.after_url || co.img || "",
             slots, ai_verify: co.ai_verify || "pending", flagged: suspicious, resolved: false, timestamp: Date.now()
         });
@@ -1245,7 +1219,7 @@
         // Save for "View Last Receipt" (per-device, instant re-view).
         try {
             localStorage.setItem('lastReceipt', JSON.stringify({
-                item: description, cost: totalCost, bal: newBalance,
+                item: description, cost: totalCost, balanceBefore, bal: newBalance,
                 ts: Date.now(), machine: window.currentMachineID
             }));
         } catch (e) {}
@@ -1256,6 +1230,7 @@
         document.getElementById('receipt-phase').style.display = 'block';
         document.getElementById('receipt-item').innerText = description;
         document.getElementById('receipt-price').innerText = totalCost.toFixed(2);
+        document.getElementById('receipt-bal-before').innerText = balanceBefore.toFixed(2);
         document.getElementById('receipt-bal').innerText = newBalance.toFixed(2);
 
         if (newBalance < 0) {
@@ -1367,7 +1342,9 @@
                 const cur = parseFloat(snap.val() || 0);
                 set(balRef, cur + amountToAdd).then(() => {
                     const h = push(ref(db, 'users/' + uid + '/history'));
-                    set(h, { item: "Account Top-Up", amount: amountToAdd, balanceAfter: cur + amountToAdd, timestamp: Date.now(), type: "topup" });
+                    const balanceBefore = Math.round(cur * 100) / 100;
+                    const balanceAfter = Math.round((cur + amountToAdd) * 100) / 100;
+                    set(h, { item: "Account Top-Up", amount: amountToAdd, balanceBefore, balanceAfter, timestamp: Date.now(), type: "topup" });
                     get(ref(db, 'vendingMachine/securityAlerts')).then(s => {
                         if (s.exists()) s.forEach(c => {
                             const d = c.val();

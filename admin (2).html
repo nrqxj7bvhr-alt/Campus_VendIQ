@@ -266,7 +266,7 @@
 <div id="login-view" class="view active-view">
     <div class="login-wrap">
         <div class="login-card">
-            <h2>Campus VendIQ</h2>
+            <h2>UTM Smart Vending</h2>
             <p class="subtitle">Admin Portal</p>
             <input type="email" id="email" placeholder="Admin Email">
             <input type="password" id="password" placeholder="Password">
@@ -286,7 +286,7 @@
     <div id="home-view" class="view active-view">
         <div style="margin-bottom:16px;padding-top:4px;">
             <h2 style="font-size:22px;color:var(--text);font-weight:800;">Admin Dashboard</h2>
-            <p class="text-muted">Campus VendIQ</p>
+            <p class="text-muted">UTM Smart Vending Machine</p>
             <p id="machine-online-status" style="font-size:12px;font-weight:700;margin-top:4px;color:var(--text-light);">● Checking machine…</p>
         </div>
 
@@ -872,12 +872,16 @@
                 const costText = isTopup ? `+ RM ${parseFloat(t.amount || 0).toFixed(2)}` : `- RM ${parseFloat(t.cost || 0).toFixed(2)}`;
                 const badge = isTopup ? `<span class="badge badge-green">${costText}</span>` : `<span class="badge badge-red">${costText}</span>`;
                 const mi = t.machine ? ` · ${t.machine}` : (!isTopup ? " · Machine 1" : "");
+                const balAfter = parseFloat(t.balanceAfter || 0);
+                const balBefore = t.balanceBefore !== undefined
+                    ? parseFloat(t.balanceBefore)
+                    : (isTopup ? balAfter - parseFloat(t.amount || 0) : balAfter + parseFloat(t.cost || 0));
                 html += `<div class="list-card">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;">
                         <h4 style="flex:1;">${t.item}</h4>${badge}
                     </div>
                     <p>${formatDate(t.timestamp)}${mi}</p>
-                    <p>Balance after: <strong>RM ${parseFloat(t.balanceAfter || 0).toFixed(2)}</strong></p>
+                    <p>Balance before: <strong>RM ${balBefore.toFixed(2)}</strong> · Balance after: <strong>RM ${balAfter.toFixed(2)}</strong></p>
                     <button onclick="deleteUserTransaction('${uid}','${t._key}')" class="btn-danger btn-sm" style="margin-top:8px;">🗑 Delete</button>
                 </div>`;
             });
@@ -1265,9 +1269,11 @@
         const cards = list.map(p => {
             const u = window.usersData[p.uid] || {};
             const name = u.fullname || '(no name)';
-            const balance = u.balance !== undefined ? parseFloat(u.balance).toFixed(2) : '?';
             const before = p.before_url || 'https://placehold.co/250x160?text=No+Before';
             const after = p.after_url || 'https://placehold.co/250x160?text=No+After';
+            const charged = parseFloat(p.total || 0);
+            const balanceAfter = parseFloat(p.balanceAfter || 0);
+            const balanceBefore = p.balanceBefore !== undefined ? parseFloat(p.balanceBefore) : balanceAfter + charged;
             const flagBadge = p.flagged ? `<span class="badge badge-red">⚠️ Suspicious</span>` : `<span class="badge badge-green">✓ OK</span>`;
             const resolvedBadge = p.resolved ? `<span class="badge badge-grey" style="margin-left:4px;">Resolved</span>` : '';
             let aiText = p.ai_verify && p.ai_verify !== 'pending' ? p.ai_verify : 'not checked';
@@ -1289,7 +1295,7 @@
                         </div>
                     </div>
                     <p><strong>${name}</strong> · ${p.email}</p>
-                    <p>Charged: <strong>RM ${parseFloat(p.total || 0).toFixed(2)}</strong> · Balance after: RM ${parseFloat(p.balanceAfter || 0).toFixed(2)} · Current: RM ${balance}</p>
+                    <p>Balance before: <strong>RM ${balanceBefore.toFixed(2)}</strong> · Charged: <strong>RM ${charged.toFixed(2)}</strong> · Balance after: <strong>RM ${balanceAfter.toFixed(2)}</strong></p>
                     <p style="font-size:12px;color:var(--text-light);">${formatDate(p.timestamp)}</p>
                     <p style="color:${aiColor};font-size:13px;"><strong>AI check:</strong> ${aiText}</p>
                     <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
