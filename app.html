@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>UTM Smart Vending</title>
+    <title>Campus-VendIQ</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0056b3">
+    <meta name="theme-color" content="#1463d6">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="UTM Vending">
+    <meta name="apple-mobile-web-app-title" content="Campus-VendIQ">
     <link rel="apple-touch-icon" href="icon.svg">
     <style>
         :root {
@@ -77,8 +77,9 @@
 <body>
     <div class="auth-card">
         <div class="hero">
-            <div class="logo">🏪</div>
-            <h1>UTM Smart Vending</h1>
+            <img class="logo" src="icon.svg" alt="" width="64" height="64"
+                 style="border-radius:16px;box-shadow:0 10px 22px rgba(0,0,0,.28);">
+            <h1>Campus-VendIQ</h1>
             <p>Fast · Cashless · Smart</p>
         </div>
         <div class="body">
@@ -111,7 +112,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, setPersistence, browserLocalPersistence, indexedDBLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCMNKH5ES47w4ywhm-0eykbWNA0ZrU7V-I",
@@ -124,6 +125,11 @@
         };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        // Persist the session so the login carries over to index.html / admin.html
+        // instead of dropping to in-memory auth (the "must re-login" bug).
+        setPersistence(auth, indexedDBLocalPersistence)
+            .catch(() => setPersistence(auth, browserLocalPersistence))
+            .catch(() => {});
 
         const ADMIN_EMAIL = "campusvendiq@gmail.com";
         const ADMIN_EMAILS = [ADMIN_EMAIL];

@@ -3,38 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UTM Smart Vending</title>
+    <title>Campus-VendIQ</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0056b3">
+    <meta name="theme-color" content="#1463d6">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="UTM Vending">
+    <meta name="apple-mobile-web-app-title" content="Campus-VendIQ">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="icon.svg">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <style>
         :root {
-            --primary: #0056b3;
+            --primary: #1463d6;
             --primary-dark: #003d80;
             --primary-light: #e8f0fb;
             --accent: #17a2b8;
             --danger: #dc3545;
-            --warning: #ffc107;
-            --success: #28a745;
-            --bg: #f0f2f5;
+            --warning: #ffb300;
+            --success: #1faa55;
+            --bg: #eef2f8;
             --card: #ffffff;
-            --text: #333333;
-            --text-light: #6c757d;
-            --border: #dee2e6;
-            --shadow: 0 2px 8px rgba(0,0,0,0.08);
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
-            --shadow-lg: 0 8px 16px rgba(0,0,0,0.12);
-            --radius: 10px;
+            --text: #1a2233;
+            --text-light: #6b7686;
+            --border: #e3e8f0;
+            --shadow: 0 2px 10px rgba(20,40,80,0.06);
+            --shadow-md: 0 8px 22px rgba(20,40,80,0.10);
+            --shadow-lg: 0 16px 40px rgba(20,40,80,0.16);
+            --radius: 16px;
+            --grad-primary: linear-gradient(135deg, #2b7df0 0%, #0a4bb0 100%);
+            --grad-hero: linear-gradient(140deg, #2c84f5 0%, #0a4cb3 55%, #06317d 100%);
+            --grad-app: linear-gradient(180deg, #f3f7fd 0%, #eaf0f9 100%);
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #dde6f3; min-height: 100vh; min-height: 100dvh; display: flex; justify-content: center; align-items: flex-start; }
 
-        .app-shell { width: 100%; max-width: 420px; min-height: 100vh; background: var(--card); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; position: relative; }
+        .app-shell { width: 100%; max-width: 440px; min-height: 100vh; min-height: 100dvh; background: var(--grad-app); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; position: relative; overflow-x: hidden; }
 
         /* ---- VIEWS ---- */
         .view { display: none; padding: 20px; flex: 1; }
@@ -44,11 +49,11 @@
 
         /* ---- HEADER BAR (inside logged-in views) ---- */
         .app-bar {
-            background: var(--primary); color: white;
-            padding: 14px 18px; display: flex; align-items: center; gap: 12px;
-            position: sticky; top: 0; z-index: 10;
+            background: var(--grad-primary); color: white;
+            padding: 15px 18px; display: flex; align-items: center; gap: 12px;
+            position: sticky; top: 0; z-index: 10; box-shadow: 0 4px 16px rgba(10,76,179,0.22);
         }
-        .app-bar h1 { font-size: 17px; font-weight: 700; flex: 1; }
+        .app-bar h1 { font-size: 17px; font-weight: 800; flex: 1; letter-spacing: -.2px; }
         .app-bar .avatar {
             width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.25);
             display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer;
@@ -66,66 +71,81 @@
 
         /* ---- INPUTS ---- */
         input, select {
-            width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
-            border-radius: 8px; font-size: 15px; color: var(--text);
-            background: white; margin-bottom: 10px; transition: border-color 0.2s;
+            width: 100%; padding: 13px 15px; border: 1.5px solid var(--border);
+            border-radius: 12px; font-size: 15px; color: var(--text);
+            background: white; margin-bottom: 10px; transition: border-color .2s, box-shadow .2s;
             box-sizing: border-box;
         }
-        input:focus, select:focus { outline: none; border-color: var(--primary); }
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(20,99,214,0.12); }
 
         /* ---- BUTTONS ---- */
         button {
-            width: 100%; padding: 13px; background: var(--primary); color: white;
-            border: none; border-radius: 8px; cursor: pointer; font-size: 15px;
-            font-weight: 700; transition: background 0.15s, transform 0.1s; margin-top: 8px;
+            width: 100%; padding: 14px; background: var(--grad-primary); color: white;
+            border: none; border-radius: 13px; cursor: pointer; font-size: 15px;
+            font-weight: 700; transition: filter .15s, transform .1s, box-shadow .15s; margin-top: 8px;
+            box-shadow: 0 8px 18px -8px rgba(20,99,214,0.6);
         }
-        button:hover { filter: brightness(88%); }
+        button:hover { filter: brightness(96%); box-shadow: 0 10px 22px -8px rgba(20,99,214,0.7); }
         button:active { transform: scale(0.98); }
-        .btn-accent { background: var(--accent); }
-        .btn-danger { background: var(--danger); }
-        .btn-warning { background: var(--warning); }
-        .btn-secondary { background: #64748b; }
-        .btn-outline { background: none !important; color: var(--primary); border: 2px solid var(--primary); }
+        .btn-accent { background: var(--accent); box-shadow: none; }
+        .btn-danger { background: linear-gradient(135deg,#e9495a,#cc2c3d); box-shadow: 0 8px 18px -8px rgba(220,53,69,0.6); }
+        .btn-warning { background: linear-gradient(135deg,#ffc94d,#ff9f1c); color: #4a2d00; box-shadow: 0 8px 18px -8px rgba(255,160,0,0.55); }
+        .btn-secondary { background: #64748b; box-shadow: none; }
+        .btn-outline { background: none !important; color: var(--primary); border: 2px solid var(--primary); box-shadow: none; }
         .btn-outline:hover { background: var(--primary-light) !important; filter: none; }
-        .btn-sm { padding: 7px 14px; font-size: 13px; margin-top: 0; width: auto; }
+        .btn-sm { padding: 8px 15px; font-size: 13px; margin-top: 0; width: auto; box-shadow: none; }
         .btn-lg { padding: 16px; font-size: 17px; }
 
         /* ---- CARDS ---- */
         .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin-bottom: 12px; }
         .card-border { border: 1px solid var(--border); }
 
-        /* ---- BALANCE CARD ---- */
+        /* ---- BALANCE CARD (big hero) ---- */
         .balance-card {
-            background: linear-gradient(135deg, #0056b3, #003d80);
-            color: white; border-radius: var(--radius); padding: 22px 20px;
-            margin-bottom: 16px; position: relative; overflow: hidden;
+            background: var(--grad-hero);
+            color: white; border-radius: 24px; padding: 26px 24px 24px;
+            margin-bottom: 18px; position: relative; overflow: hidden;
+            box-shadow: 0 18px 40px -12px rgba(10,76,179,0.55);
         }
         .balance-card::before {
-            content: ''; position: absolute; top: -30px; right: -30px;
-            width: 110px; height: 110px; border-radius: 50%;
-            background: rgba(255,255,255,0.08);
+            content: ''; position: absolute; top: -50px; right: -40px;
+            width: 160px; height: 160px; border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.22), rgba(255,255,255,0));
         }
         .balance-card::after {
-            content: ''; position: absolute; bottom: -20px; right: 40px;
-            width: 70px; height: 70px; border-radius: 50%;
-            background: rgba(255,255,255,0.06);
+            content: ''; position: absolute; bottom: -55px; left: -30px;
+            width: 130px; height: 130px; border-radius: 50%;
+            background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.12), rgba(255,255,255,0));
         }
-        .balance-label { font-size: 13px; opacity: 0.85; margin-bottom: 4px; }
-        .balance-amount { font-size: 38px; font-weight: 800; letter-spacing: -1px; }
-        .balance-sub { font-size: 12px; opacity: 0.75; margin-top: 4px; }
+        .balance-card > * { position: relative; z-index: 1; }
+        .balance-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;
+            letter-spacing: .4px; text-transform: uppercase; background: rgba(255,255,255,0.18);
+            padding: 5px 11px; border-radius: 20px; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+        .balance-label { font-size: 13px; opacity: 0.88; margin: 14px 0 2px; }
+        .balance-amount { font-size: 46px; font-weight: 800; letter-spacing: -1.5px; line-height: 1.05; }
+        .balance-amount .cur { font-size: 22px; font-weight: 700; opacity: .8; margin-right: 4px; vertical-align: 6px; }
+        .balance-sub { font-size: 12.5px; opacity: 0.8; margin-top: 8px; display: flex; align-items: center; gap: 6px; }
 
         /* ---- QUICK ACTIONS ---- */
-        .quick-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+        .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
         .quick-btn {
-            background: var(--primary); color: white; border: none; border-radius: 8px;
-            padding: 14px 16px; text-align: left; cursor: pointer; transition: 0.15s;
-            box-shadow: var(--shadow); display: flex; align-items: center; gap: 14px;
-            width: 100%;
+            background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 18px;
+            padding: 16px 14px; text-align: left; cursor: pointer; transition: transform .15s, box-shadow .15s, border-color .15s;
+            box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 10px;
+            width: 100%; position: relative; overflow: hidden;
         }
-        .quick-btn:hover { background: var(--primary-dark); filter: none; }
-        .quick-btn .qb-icon { font-size: 24px; flex-shrink: 0; }
-        .quick-btn .qb-label { font-size: 16px; font-weight: 700; color: white; }
-        .quick-btn .qb-sub { font-size: 12px; color: rgba(255,255,255,0.75); margin-top: 1px; }
+        .quick-btn:hover { filter: none; transform: translateY(-3px); box-shadow: var(--shadow-md); }
+        .quick-btn:active { transform: translateY(0) scale(.98); }
+        .quick-btn.feature { grid-column: span 2; flex-direction: row; align-items: center; gap: 14px;
+            background: var(--grad-primary); border: none; color: #fff; padding: 18px 18px; box-shadow: 0 12px 26px -10px rgba(20,99,214,0.6); }
+        .quick-btn .qb-icon { width: 46px; height: 46px; border-radius: 13px; display: flex; align-items: center;
+            justify-content: center; font-size: 23px; flex-shrink: 0; background: var(--ic-bg, var(--primary-light)); }
+        .quick-btn.feature .qb-icon { background: rgba(255,255,255,0.2); width: 50px; height: 50px; }
+        .quick-btn .qb-label { font-size: 15px; font-weight: 700; color: inherit; }
+        .quick-btn.feature .qb-label { font-size: 17px; }
+        .quick-btn .qb-sub { font-size: 11.5px; color: var(--text-light); margin-top: 2px; line-height: 1.35; }
+        .quick-btn.feature .qb-sub { color: rgba(255,255,255,0.82); }
+        .quick-btn.feature .qb-arrow { margin-left: auto; font-size: 20px; opacity: .85; }
 
         /* ---- LIST ITEMS ---- */
         .list-item {
@@ -138,24 +158,76 @@
         /* ---- INVENTORY ITEM ---- */
         .inv-item {
             background: var(--card); border: 1px solid var(--border);
-            border-left: 4px solid var(--accent); border-radius: 8px;
-            padding: 14px; margin-bottom: 8px; display: flex;
+            border-left: 4px solid var(--primary); border-radius: 14px;
+            padding: 14px 16px; margin-bottom: 10px; display: flex;
             justify-content: space-between; align-items: center; box-shadow: var(--shadow);
+            transition: transform .15s, box-shadow .15s;
         }
-        .inv-item.out-of-stock { opacity: 0.55; border-left-color: var(--danger); }
+        .inv-item:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+        .inv-item.out-of-stock { opacity: 0.6; border-left-color: var(--danger); }
 
         /* ---- MACHINE CARD ---- */
         .machine-card {
-            border: 2px solid var(--primary); border-radius: 10px; padding: 16px;
-            cursor: pointer; transition: 0.2s; background: var(--card); box-shadow: var(--shadow);
-            margin-bottom: 10px;
+            border: 1.5px solid var(--border); border-radius: 16px; padding: 16px;
+            cursor: pointer; transition: transform .18s, box-shadow .18s, border-color .18s;
+            background: var(--card); box-shadow: var(--shadow); margin-bottom: 10px;
         }
-        .machine-card:hover { background: var(--primary); color: white; }
-        .machine-card:hover .mc-sub { color: rgba(255,255,255,0.8); }
+        .machine-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--primary); }
+        .machine-card.selected { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(20,99,214,0.14), var(--shadow-md); }
         .mc-status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; margin-top: 6px; }
-        .status-dot-sm { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
-        .status-dot-sm.busy { background: var(--warning); }
-        .status-dot-sm.offline { background: var(--danger); }
+        .status-dot-sm { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex-shrink: 0; box-shadow: 0 0 0 3px rgba(31,170,85,0.18); }
+        .status-dot-sm.busy { background: var(--warning); box-shadow: 0 0 0 3px rgba(255,179,0,0.18); }
+        .status-dot-sm.offline { background: var(--danger); box-shadow: 0 0 0 3px rgba(220,53,69,0.18); }
+
+        /* ---- UNIFIED MACHINE HUB ---- */
+        #machines-view.active-view { display: flex; flex-direction: column; min-height: 100dvh; }
+        .map-frame { position: relative; }
+        .map-frame #vending-map { border-bottom-left-radius: 0; }
+        .map-locate-btn {
+            position: absolute; right: 14px; bottom: 26px; z-index: 5; width: 44px; height: 44px;
+            border-radius: 50%; background: #fff; color: var(--primary); border: none; margin: 0; padding: 0;
+            font-size: 19px; box-shadow: var(--shadow-md); display: flex; align-items: center; justify-content: center;
+        }
+        .machine-sheet {
+            position: relative; z-index: 2; margin-top: -22px; background: var(--card);
+            border-radius: 24px 24px 0 0; box-shadow: 0 -10px 30px rgba(20,40,80,0.12);
+            padding: 8px 16px 22px; flex: 1;
+        }
+        .sheet-grip { width: 42px; height: 5px; border-radius: 3px; background: var(--border); margin: 0 auto 12px; }
+        .hub-tip { font-size: 12.5px; color: var(--text-light); text-align: center; margin-bottom: 12px; }
+        .status-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700;
+            padding: 4px 10px; border-radius: 20px; }
+        .status-pill.online { background: rgba(31,170,85,.12); color: var(--success); }
+        .status-pill.busy { background: rgba(255,179,0,.15); color: #b97700; }
+        .status-pill.offline { background: rgba(220,53,69,.12); color: var(--danger); }
+        .status-pill.unknown { background: #eef1f6; color: var(--text-light); }
+        .hub-empty { text-align: center; color: var(--text-light); font-size: 13px; padding: 22px 10px; }
+
+        /* ---- MACHINE ACCORDION (collapsible cards) ---- */
+        .machine-acc { border: 1.5px solid var(--border); border-radius: 16px; background: var(--card);
+            box-shadow: var(--shadow); margin-bottom: 12px; overflow: hidden; transition: border-color .2s, box-shadow .2s; }
+        .machine-acc.open { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(20,99,214,.12), var(--shadow-md); }
+        .acc-head { display: flex; align-items: center; gap: 12px; padding: 14px; cursor: pointer; }
+        .acc-head:active { background: #f6f9ff; }
+        .acc-ic { width: 44px; height: 44px; border-radius: 13px; background: var(--grad-primary); color: #fff;
+            display: flex; align-items: center; justify-content: center; font-size: 21px; flex-shrink: 0;
+            box-shadow: 0 8px 16px -8px rgba(20,99,214,.6); }
+        .acc-title { font-size: 16px; font-weight: 800; color: var(--text); line-height: 1.2; }
+        .acc-loc { font-size: 12.5px; color: var(--text-light); margin-top: 2px; }
+        .acc-right { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+        .acc-dist { text-align: right; font-size: 11px; color: var(--text-light); line-height: 1.2; }
+        .acc-dist strong { display: block; font-size: 15px; color: var(--primary); font-weight: 800; }
+        .acc-chev { font-size: 20px; color: var(--text-light); transition: transform .3s ease; line-height: 1; }
+        .machine-acc.open .acc-chev { transform: rotate(180deg); color: var(--primary); }
+        .acc-body-wrap { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .32s cubic-bezier(.4,0,.2,1); }
+        .machine-acc.open .acc-body-wrap { grid-template-rows: 1fr; }
+        .acc-body-inner { overflow: hidden; min-height: 0; }
+        .acc-body { padding: 0 14px 14px; }
+        .acc-statusrow { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .acc-section-label { font-size: 11px; font-weight: 800; letter-spacing: .6px; color: var(--text-light);
+            text-transform: uppercase; margin: 14px 0 8px; }
+        .acc-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+        .acc-actions button { margin: 0; }
 
         /* ---- STEP INDICATOR ---- */
         .step-indicator { display: flex; align-items: center; margin-bottom: 20px; }
@@ -197,16 +269,20 @@
         .history-item .hi-meta { font-size: 12px; color: var(--text-light); margin-top: 2px; }
 
         /* ---- PROFILE ---- */
-        .profile-avatar { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg,#0056b3,#003d80); color: white; font-size: 30px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+        .profile-avatar { width: 78px; height: 78px; border-radius: 50%; background: var(--grad-hero); color: white; font-size: 32px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; box-shadow: 0 10px 24px -8px rgba(10,76,179,.6); }
         .profile-info-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
         .profile-info-row:last-child { border-bottom: none; }
         .pir-label { color: var(--text-light); font-size: 13px; }
         .pir-value { font-weight: 600; color: var(--text); }
 
         /* ---- LOGIN ---- */
-        .login-hero { background: linear-gradient(160deg,#0056b3,#003d80); padding: 40px 24px 28px; text-align: center; color: white; }
-        .login-hero .app-name { font-size: 26px; font-weight: 800; margin-bottom: 4px; }
-        .login-hero .app-tagline { font-size: 14px; opacity: 0.85; }
+        .login-hero { background: var(--grad-hero); padding: 48px 24px 34px; text-align: center; color: white;
+            position: relative; overflow: hidden; border-radius: 0 0 28px 28px; }
+        .login-hero::after { content:''; position:absolute; top:-60px; right:-50px; width:180px; height:180px;
+            border-radius:50%; background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.18), rgba(255,255,255,0)); }
+        .login-hero > * { position: relative; z-index: 1; }
+        .login-hero .app-name { font-size: 27px; font-weight: 800; margin-bottom: 4px; letter-spacing: -.4px; }
+        .login-hero .app-tagline { font-size: 14px; opacity: 0.9; }
         .login-body { padding: 24px; }
         .auth-tabs { display: flex; gap: 0; margin-bottom: 20px; border-radius: 8px; overflow: hidden; border: 1.5px solid var(--border); }
         .auth-tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-size: 14px; font-weight: 700; color: var(--text-light); background: var(--card); transition: 0.15s; }
@@ -283,6 +359,45 @@
                 background: var(--border); margin: -8px auto 14px;
             }
         }
+
+        /* ---- SETTINGS + FEEDBACK ---- */
+        .settings-label { font-size: 11.5px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase;
+            color: var(--text-light); margin: 20px 4px 8px; }
+        .settings-row { display: flex; align-items: center; gap: 13px; background: var(--card);
+            border: 1px solid var(--border); border-radius: 16px; padding: 14px; box-shadow: var(--shadow);
+            cursor: pointer; transition: transform .15s, box-shadow .15s, border-color .15s; }
+        .settings-row:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--primary); }
+        .settings-row:active { transform: scale(.99); }
+        .settings-row-ic { width: 44px; height: 44px; border-radius: 13px; display: flex; align-items: center;
+            justify-content: center; font-size: 21px; flex-shrink: 0; }
+        .settings-row-title { font-size: 15px; font-weight: 700; color: var(--text); }
+        .settings-row-sub { font-size: 12px; color: var(--text-light); margin-top: 2px; line-height: 1.35; }
+        .settings-row-arrow { font-size: 26px; color: var(--text-light); line-height: 1; flex-shrink: 0; }
+
+        .feedback-hero { display: flex; align-items: center; gap: 14px; background: var(--grad-hero); color: #fff;
+            border-radius: 18px; padding: 16px 18px; margin-bottom: 18px; box-shadow: 0 14px 30px -12px rgba(10,76,179,.55); }
+        .feedback-hero-ic { width: 46px; height: 46px; border-radius: 14px; background: rgba(255,255,255,.2);
+            display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+
+        .fld-label { display: block; font-size: 13px; font-weight: 700; color: var(--text); margin: 4px 2px 7px; }
+        textarea { width: 100%; padding: 13px 15px; border: 1.5px solid var(--border); border-radius: 12px;
+            font-size: 15px; font-family: inherit; color: var(--text); background: #fff; margin-bottom: 14px;
+            transition: border-color .2s, box-shadow .2s; resize: vertical; min-height: 110px; }
+        textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(20,99,214,.12); }
+        select { cursor: pointer; }
+
+        .dropzone { border: 2px dashed var(--border); border-radius: 16px; padding: 22px 16px; text-align: center;
+            cursor: pointer; background: #f7faff; transition: border-color .2s, background .2s; margin-bottom: 14px; }
+        .dropzone:hover { border-color: var(--primary); background: var(--primary-light); }
+        .dz-icon { font-size: 30px; line-height: 1; }
+        .dz-text { font-size: 14px; font-weight: 700; color: var(--primary); margin-top: 7px; }
+        .dz-sub { font-size: 12px; color: var(--text-light); margin-top: 3px; }
+        .dz-remove { position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 7px 12px;
+            font-size: 12px; font-weight: 700; background: rgba(0,0,0,.62); border-radius: 20px; box-shadow: none; }
+        .dz-remove:hover { background: rgba(0,0,0,.78); filter: none; }
+        .spin { width: 16px; height: 16px; border: 2.5px solid rgba(255,255,255,.4); border-top-color: #fff;
+            border-radius: 50%; display: inline-block; vertical-align: -3px; animation: spin360 .7s linear infinite; }
+        @keyframes spin360 { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -291,8 +406,9 @@
     <!-- ====== LOGIN VIEW ====== -->
     <div id="login-view" class="view active-view" style="padding:0;">
         <div class="login-hero">
-            <div style="font-size:48px;margin-bottom:8px;">🏪</div>
-            <div class="app-name">UTM Smart Vending</div>
+            <img src="icon.svg" alt="" width="78" height="78"
+                 style="margin-bottom:12px;border-radius:20px;box-shadow:0 10px 24px rgba(0,0,0,.28);">
+            <div class="app-name">Campus-VendIQ</div>
             <div class="app-tagline">Fast · Cashless · Smart</div>
         </div>
         <div class="login-body">
@@ -319,42 +435,43 @@
     <!-- ====== HOME VIEW ====== -->
     <div id="home-view" class="view" style="padding:0;">
         <div class="app-bar">
-            <h1>🏪 UTM Vending</h1>
+            <h1>Campus-VendIQ</h1>
             <div class="avatar" onclick="switchView('profile-view')" title="Profile">👤</div>
         </div>
         <div style="padding:18px;">
-            <p id="welcome-name" style="font-size:14px;color:var(--text-light);margin-bottom:14px;">Welcome!</p>
+            <p id="welcome-name" style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:14px;">Welcome!</p>
 
             <div class="balance-card">
+                <span class="balance-chip">💳 Campus-VendIQ Wallet</span>
                 <div class="balance-label">Available Balance</div>
-                <div class="balance-amount">RM <span id="user-balance">0.00</span></div>
+                <div class="balance-amount"><span class="cur">RM</span><span id="user-balance">0.00</span></div>
                 <div class="balance-sub" id="balance-status-text">Ready to vend</div>
             </div>
 
             <div class="quick-grid">
-                <div class="quick-btn" onclick="switchView('buy-view')" style="background:#28a745;">
+                <div class="quick-btn feature" onclick="switchView('machines-view')">
                     <span class="qb-icon">🛒</span>
-                    <div><div class="qb-label">Buy Items</div><div class="qb-sub">Unlock the vending machine</div></div>
+                    <div>
+                        <div class="qb-label">Buy &amp; Find Machines</div>
+                        <div class="qb-sub">Live map · stock · directions · unlock</div>
+                    </div>
+                    <span class="qb-arrow">→</span>
                 </div>
-                <div class="quick-btn" onclick="switchView('check-machine-view')" style="background:#17a2b8;">
-                    <span class="qb-icon">📦</span>
-                    <div><div class="qb-label">Check Stock</div><div class="qb-sub">View item availability</div></div>
-                </div>
-                <div class="quick-btn" onclick="switchView('topup-view')" style="background:#0056b3;">
+                <div class="quick-btn" onclick="switchView('topup-view')" style="--ic-bg:#e3f2ff;">
                     <span class="qb-icon">💳</span>
-                    <div><div class="qb-label">Reload Balance</div><div class="qb-sub">Top up with Touch 'n Go</div></div>
+                    <div><div class="qb-label">Reload</div><div class="qb-sub">Top up with Touch 'n Go</div></div>
                 </div>
-                <div class="quick-btn" onclick="switchView('transfer-view')" style="background:#0f766e;">
-                    <span class="qb-icon">↔</span>
-                    <div><div class="qb-label">Transfer Balance</div><div class="qb-sub">Send RM to another student</div></div>
+                <div class="quick-btn" onclick="switchView('transfer-view')" style="--ic-bg:#dcf5ee;">
+                    <span class="qb-icon">↔️</span>
+                    <div><div class="qb-label">Transfer</div><div class="qb-sub">Send RM to a friend</div></div>
                 </div>
-                <div class="quick-btn" onclick="switchView('history-view')" style="background:#6c757d;">
+                <div class="quick-btn" onclick="switchView('history-view')" style="--ic-bg:#eceef3;">
                     <span class="qb-icon">📜</span>
-                    <div><div class="qb-label">Transaction History</div><div class="qb-sub">View past purchases &amp; top-ups</div></div>
+                    <div><div class="qb-label">History</div><div class="qb-sub">Purchases &amp; top-ups</div></div>
                 </div>
-                <div class="quick-btn" onclick="switchView('map-view')" style="background:#6f42c1;">
-                    <span class="qb-icon">🗺️</span>
-                    <div><div class="qb-label">Find Machines</div><div class="qb-sub">Live campus map &amp; stock levels</div></div>
+                <div class="quick-btn" onclick="switchView('profile-view')" style="--ic-bg:#efe7fb;">
+                    <span class="qb-icon">⚙️</span>
+                    <div><div class="qb-label">Settings</div><div class="qb-sub">Account &amp; feedback</div></div>
                 </div>
             </div>
 
@@ -362,11 +479,11 @@
         </div>
     </div>
 
-    <!-- ====== PROFILE VIEW ====== -->
+    <!-- ====== SETTINGS VIEW (was Profile) ====== -->
     <div id="profile-view" class="view" style="padding:0;">
         <div class="app-bar">
             <button class="back-btn-bar" onclick="switchView('home-view')">←</button>
-            <h1>My Profile</h1>
+            <h1>Settings</h1>
         </div>
         <div style="padding:20px;">
             <div style="text-align:center;margin-bottom:20px;">
@@ -374,6 +491,8 @@
                 <h3 id="profile-name-display">–</h3>
                 <p class="text-muted" id="profile-email-display">–</p>
             </div>
+
+            <div class="settings-label">Account</div>
             <div class="card card-border">
                 <div class="profile-info-row">
                     <span class="pir-label">Full Name</span>
@@ -394,7 +513,67 @@
                 <button onclick="saveFullName()" style="background:var(--primary);">Save Name</button>
                 <p id="edit-name-msg" style="font-size:13px;margin-top:8px;"></p>
             </div>
-            <button onclick="sendPasswordReset()" class="btn-outline" style="margin-top:4px;">🔐 Send Password Reset Email</button>
+
+            <div class="settings-label">Help &amp; Feedback</div>
+            <div class="settings-row" onclick="switchView('suggestion-view')">
+                <div class="settings-row-ic" style="background:#e3f2ff;">💬</div>
+                <div style="flex:1;">
+                    <div class="settings-row-title">Send a Suggestion</div>
+                    <div class="settings-row-sub">Restocking, machine issues, ideas — with a photo</div>
+                </div>
+                <span class="settings-row-arrow">›</span>
+            </div>
+
+            <div class="settings-label">Security</div>
+            <button onclick="sendPasswordReset()" class="btn-outline" style="margin-top:0;">🔐 Send Password Reset Email</button>
+        </div>
+    </div>
+
+    <!-- ====== SUGGESTION / FEEDBACK VIEW ====== -->
+    <div id="suggestion-view" class="view" style="padding:0;">
+        <div class="app-bar">
+            <button class="back-btn-bar" onclick="switchView('profile-view')">←</button>
+            <h1>Send a Suggestion</h1>
+        </div>
+        <div style="padding:20px;">
+            <div class="feedback-hero">
+                <div class="feedback-hero-ic">💬</div>
+                <div>
+                    <div style="font-weight:800;font-size:15px;">We're listening</div>
+                    <div style="font-size:12.5px;opacity:.9;margin-top:2px;">Your message goes straight to the Campus-VendIQ team.</div>
+                </div>
+            </div>
+
+            <label class="fld-label">What's it about?</label>
+            <select id="sug-category">
+                <option value="Restocking request">🥤 Restocking request</option>
+                <option value="Machine problem">🛠️ Machine problem / fault</option>
+                <option value="Payment / balance issue">💳 Payment / balance issue</option>
+                <option value="Item quality / expiry">📦 Item quality / expiry</option>
+                <option value="App feedback">📱 App feedback</option>
+                <option value="Other">✨ Other</option>
+            </select>
+
+            <label class="fld-label">Which machine? <span style="font-weight:400;color:var(--text-light);">(optional)</span></label>
+            <input type="text" id="sug-machine" placeholder="e.g. Machine 01 — Faculty of Electrical Eng.">
+
+            <label class="fld-label">Your message</label>
+            <textarea id="sug-message" rows="5" placeholder="Tell us what's happening or what you'd like to see…"></textarea>
+
+            <label class="fld-label">Add a photo <span style="font-weight:400;color:var(--text-light);">(optional)</span></label>
+            <input type="file" id="sug-photo-input" accept="image/*" style="display:none;" onchange="onSuggestionPhoto(event)">
+            <div id="sug-dropzone" class="dropzone" onclick="document.getElementById('sug-photo-input').click()">
+                <div class="dz-icon">📷</div>
+                <div class="dz-text">Tap to add a photo</div>
+                <div class="dz-sub">Show us the empty slot, fault or receipt</div>
+            </div>
+            <div id="sug-preview-wrap" style="display:none;position:relative;margin-bottom:12px;">
+                <img id="sug-preview" alt="preview" style="width:100%;border-radius:14px;border:1px solid var(--border);display:block;">
+                <button type="button" onclick="clearSuggestionPhoto()" class="dz-remove">✕ Remove</button>
+            </div>
+
+            <button id="sug-send-btn" onclick="submitSuggestion()" class="btn-lg" style="margin-top:6px;">📨 Send Suggestion</button>
+            <p id="sug-status" style="font-size:13px;margin-top:10px;text-align:center;min-height:18px;"></p>
         </div>
     </div>
 
@@ -453,78 +632,33 @@
         </div>
     </div>
 
-    <!-- ====== BUY VIEW (choose machine) ====== -->
-    <div id="buy-view" class="view" style="padding:0;">
+    <!-- ====== UNIFIED MACHINE HUB (map · stock · directions · buy) ====== -->
+    <div id="machines-view" class="view" style="padding:0;">
         <div class="app-bar">
             <button class="back-btn-bar" onclick="switchView('home-view')">←</button>
-            <h1>Purchase Items</h1>
+            <h1>Machines</h1>
         </div>
-        <div style="padding:20px;">
-            <p class="text-muted" style="margin-bottom:16px;">Choose a nearby vending machine to unlock.</p>
-            <div class="machine-card" onclick="selectMachine('Machine 1', 'unlock-view')">
-                <h3 style="color:var(--primary);">Machine 01</h3>
-                <p class="mc-sub text-muted" style="font-size:13px;margin:4px 0;">📍 Faculty of Electrical Engineering</p>
-                <div class="mc-status" id="mc-buy-status">
-                    <span class="status-dot-sm"></span>
-                    <span id="mc-buy-status-text">Checking status…</span>
-                </div>
+        <div class="map-frame">
+            <div id="vending-map" style="width:100%;height:42vh;min-height:260px;z-index:1;"></div>
+            <button class="map-locate-btn" title="Center on my location" onclick="centerOnUser()">📍</button>
+        </div>
+        <div class="machine-sheet">
+            <div class="sheet-grip"></div>
+            <p class="hub-tip">Tap a machine to see live stock &amp; directions.</p>
+            <div id="machine-card-list">
+                <div class="hub-empty"><div class="loader"></div></div>
             </div>
-        </div>
-    </div>
-
-    <!-- ====== CHECK STOCK VIEW ====== -->
-    <div id="check-machine-view" class="view" style="padding:0;">
-        <div class="app-bar">
-            <button class="back-btn-bar" onclick="switchView('home-view')">←</button>
-            <h1>Check Inventory</h1>
-        </div>
-        <div style="padding:20px;">
-            <p class="text-muted" style="margin-bottom:16px;">Select a machine to see available items.</p>
-            <div class="machine-card" onclick="selectMachine('Machine 1', 'inventory-detail-view')">
-                <h3 style="color:var(--primary);">Machine 01</h3>
-                <p class="mc-sub text-muted" style="font-size:13px;margin:4px 0;">📍 Faculty of Electrical Engineering</p>
-                <p style="font-size:12px;color:var(--accent);margin-top:4px;">Tap to view stock →</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- ====== INVENTORY DETAIL VIEW ====== -->
-    <div id="inventory-detail-view" class="view" style="padding:0;">
-        <div class="app-bar">
-            <button class="back-btn-bar" onclick="switchView('check-machine-view')">←</button>
-            <h1><span id="inv-machine-title">Machine 01</span> Stock</h1>
-        </div>
-        <div style="padding:20px;">
-            <div id="dedicated-inventory-list">
-                <div class="loader"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ====== CAMPUS MAP VIEW ====== -->
-    <div id="map-view" class="view" style="padding:0;">
-        <div class="app-bar">
-            <button class="back-btn-bar" onclick="switchView('home-view')">←</button>
-            <h1>Campus Map</h1>
-        </div>
-        <div id="vending-map" style="width:100%;height:54vh;min-height:320px;z-index:1;"></div>
-        <div style="padding:16px;background:var(--card);z-index:2;box-shadow:0 -4px 12px rgba(0,0,0,0.08);border-radius:16px 16px 0 0;margin-top:-10px;position:relative;">
-            <h3 id="map-info-title">Select a Machine</h3>
-            <p id="map-info-desc" class="text-muted" style="font-size:13px;margin-top:4px;">Tap a map pin to see live stock and status.</p>
-            <div id="map-info-stock" style="margin-top:10px;"></div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
-                <button id="map-directions-btn" style="display:none;width:100%;margin:0;background:#0f766e;" onclick="getDirectionsToMachine()">Directions</button>
-                <button id="map-go-btn" style="display:none;width:100%;margin:0;background:var(--primary);" onclick="selectMachine(window.selectedMapMachine, 'unlock-view')">Go to Machine</button>
-            </div>
-            <p id="map-directions-status" class="text-muted" style="display:none;font-size:12px;margin-top:8px;text-align:center;"></p>
+            <!-- legacy hidden hooks (kept so older helpers never null-crash) -->
+            <div id="dedicated-inventory-list" style="display:none;"></div>
+            <div id="map-info-stock" style="display:none;"></div>
         </div>
     </div>
 
     <!-- ====== UNLOCK / PURCHASE FLOW ====== -->
     <div id="unlock-view" class="view" style="padding:0;">
         <div class="app-bar" id="unlock-app-bar">
-            <button class="back-btn-bar" onclick="switchView('buy-view')">←</button>
-            <h1>Machine 01</h1>
+            <button class="back-btn-bar" onclick="switchView('machines-view')">←</button>
+            <h1 id="unlock-machine-title">Machine 01</h1>
         </div>
         <div style="padding:20px;">
 
@@ -662,7 +796,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendEmailVerification, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendEmailVerification, sendPasswordResetEmail, setPersistence, browserLocalPersistence, indexedDBLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
     import { getDatabase, ref, onValue, set, get, push, update, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
     const firebaseConfig = {
@@ -678,6 +812,15 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
+
+    // Keep the student signed in across reloads AND across the app.html → index hop.
+    // Without an explicit local persistence, some setups (notably file://) fall back to
+    // in-memory auth, which logs the user out on every navigation — the "kicked out,
+    // must re-login" bug. Try IndexedDB first, then localStorage.
+    setPersistence(auth, indexedDBLocalPersistence)
+        .catch(() => setPersistence(auth, browserLocalPersistence))
+        .catch(() => {});
+
     let currentUserUID = null;
     let activeUserBalance = 0;
     let currentUserData = {};
@@ -734,6 +877,149 @@
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
         navigator.serviceWorker.register('sw.js').catch(() => {});
     }
+
+    // ---------- SUGGESTIONS / FEEDBACK (emails the Campus-VendIQ team) ----------
+    const SUGGEST_TO_EMAIL   = "campusvendiq@gmail.com";
+    const EMAILJS_PUBLIC_KEY = "e1HTC-jLa_BeyPtr";
+    const EMAILJS_SERVICE_ID = "service_eda27xv";
+    const EMAILJS_TEMPLATE_ID = "template_hzm9nhq";
+    const IMGBB_API_KEY = "bb26a08e59f81bab87b8b493f6c1a21f";
+    try { if (window.emailjs && EMAILJS_PUBLIC_KEY) window.emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY }); }
+    catch (e) { console.warn('EmailJS init failed', e); }
+
+    window.suggestionPhotoDataUrl = null;   // resized JPEG data URL (or null)
+
+    // Resize a chosen image to <=1280px on its long edge and re-encode as JPEG,
+    // so uploads stay fast and well under ImgBB / email limits.
+    function resizeImageFile(file, maxEdge = 1280, quality = 0.82) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const img = new Image();
+                img.onload = () => {
+                    let { width, height } = img;
+                    if (Math.max(width, height) > maxEdge) {
+                        const s = maxEdge / Math.max(width, height);
+                        width = Math.round(width * s); height = Math.round(height * s);
+                    }
+                    const c = document.createElement('canvas');
+                    c.width = width; c.height = height;
+                    c.getContext('2d').drawImage(img, 0, 0, width, height);
+                    resolve(c.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = reject;
+                img.src = reader.result;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    window.onSuggestionPhoto = async function (event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) { showToast('Please choose an image file.', 'error'); return; }
+        try {
+            const dataUrl = await resizeImageFile(file);
+            window.suggestionPhotoDataUrl = dataUrl;
+            document.getElementById('sug-preview').src = dataUrl;
+            document.getElementById('sug-preview-wrap').style.display = 'block';
+            document.getElementById('sug-dropzone').style.display = 'none';
+        } catch (e) {
+            showToast('Could not read that photo. Try another.', 'error');
+        }
+        event.target.value = '';   // allow re-picking the same file later
+    };
+
+    window.clearSuggestionPhoto = function () {
+        window.suggestionPhotoDataUrl = null;
+        document.getElementById('sug-preview-wrap').style.display = 'none';
+        document.getElementById('sug-preview').src = '';
+        document.getElementById('sug-dropzone').style.display = 'block';
+    };
+
+    // Upload a data URL to ImgBB; returns a public URL (or "" on failure).
+    async function uploadToImgBB(dataUrl) {
+        const base64 = String(dataUrl).split(',')[1] || '';
+        const body = new FormData();
+        body.append('image', base64);
+        const res = await fetch('https://api.imgbb.com/1/upload?key=' + IMGBB_API_KEY, { method: 'POST', body });
+        const json = await res.json();
+        if (json && json.success && json.data && json.data.url) return json.data.url;
+        throw new Error('Image upload failed');
+    }
+
+    window.submitSuggestion = async function () {
+        const btn = document.getElementById('sug-send-btn');
+        const statusEl = document.getElementById('sug-status');
+        const setStatus = (m, c = 'var(--text-light)') => { statusEl.style.color = c; statusEl.textContent = m; };
+        const category = document.getElementById('sug-category').value;
+        const machine = document.getElementById('sug-machine').value.trim();
+        const message = document.getElementById('sug-message').value.trim();
+
+        if (!message) { setStatus('Please type your message first.', 'var(--danger)'); return; }
+        if (!window.emailjs) { setStatus('Email service is still loading — try again in a moment.', 'var(--danger)'); return; }
+
+        const userEmail = (auth.currentUser && auth.currentUser.email) || currentUserData.email || 'unknown';
+        const userName = currentUserData.fullname || '';
+        btn.disabled = true;
+        const original = btn.textContent;
+        btn.innerHTML = '<span class="spin"></span> Sending…';
+
+        let photoUrl = '';
+        try {
+            if (window.suggestionPhotoDataUrl) {
+                setStatus('Uploading your photo…');
+                try { photoUrl = await uploadToImgBB(window.suggestionPhotoDataUrl); }
+                catch (e) { photoUrl = ''; }   // don't block the suggestion if the upload fails
+            }
+
+            setStatus('Sending your suggestion…');
+            const lines = [
+                'New student suggestion — Campus-VendIQ',
+                '',
+                'Category: ' + category,
+                'Machine: ' + (machine || '(not specified)'),
+                'From: ' + (userName ? userName + ' ' : '') + '<' + userEmail + '>',
+                'Time: ' + new Date().toLocaleString('en-MY'),
+                '',
+                'Message:',
+                message,
+                '',
+                photoUrl ? ('Photo: ' + photoUrl) : 'Photo: (none attached)'
+            ];
+            await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                admin_email: SUGGEST_TO_EMAIL,
+                to_email: SUGGEST_TO_EMAIL,
+                machine: 'Suggestion · ' + category,
+                time: new Date().toLocaleString('en-MY'),
+                message: lines.join('\n')
+            });
+
+            // Best-effort archive so nothing is lost (and admins can review later).
+            try {
+                await set(push(ref(db, 'vendingMachine/suggestions')), {
+                    category, machine: machine || '', message, photoUrl: photoUrl || '',
+                    email: userEmail, name: userName || '', uid: currentUserUID || '',
+                    resolved: false, timestamp: Date.now()
+                });
+            } catch (e) {}
+
+            setStatus('✅ Sent! Thank you — the team will take a look.', 'var(--success)');
+            showToast('Suggestion sent ✅', 'success');
+            buzz([60, 50, 60]);
+            document.getElementById('sug-message').value = '';
+            document.getElementById('sug-machine').value = '';
+            clearSuggestionPhoto();
+            setTimeout(() => { if (document.getElementById('suggestion-view').classList.contains('active-view')) switchView('profile-view'); }, 1400);
+        } catch (e) {
+            setStatus('Could not send right now. Please try again.', 'var(--danger)');
+            showToast('Sending failed — check your connection.', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = original;
+        }
+    };
 
     // ---------- LAST RECEIPT (re-viewable, stored per-device) ----------
     window.showLastReceipt = function () {
@@ -836,28 +1122,44 @@
         else window.machineState = 'offline';   // beats were flowing then stopped → really down
         updateMachineStatusUI();
     }
-    function updateMachineStatusUI() {
-        const dot = document.querySelector('#mc-buy-status .status-dot-sm');
-        const txt = document.getElementById('mc-buy-status-text');
-        if (!dot || !txt) return;
-        if (window.machineState === 'offline') {
-            dot.className = 'status-dot-sm offline';
-            txt.textContent = '📵 Offline — machine not responding';
-            return;
-        }
+    // Derive a friendly {key,label} status from live machineState + phase.
+    function deriveMachineStatus() {
+        if (window.machineState === 'offline') return { key: 'offline', label: '📵 Offline — not responding' };
+        if (window.machineState === 'unknown') return { key: 'unknown', label: '⚪ Checking status…' };
         const phase = window.machinePhase || 'locked';
         const busy = ['preparing','unlocked','user_taking','checkout_processing','checkout_done','reminder_open_door'].includes(phase);
         const restock = phase.startsWith('restock');
-        dot.className = 'status-dot-sm' + (busy || restock ? ' busy' : '');
-        txt.textContent = busy ? 'Busy — another session in progress'
-                       : restock ? 'Being restocked — check back soon'
-                       : 'Available — tap to unlock';
+        if (restock) return { key: 'busy', label: '🔧 Being restocked' };
+        if (busy) return { key: 'busy', label: '⏳ Busy — session in progress' };
+        return { key: 'online', label: '🟢 Available — ready to unlock' };
+    }
+
+    function updateMachineStatusUI() {
+        const s = deriveMachineStatus();
+        // Hub status pill
+        const pill = document.getElementById('hub-status-pill');
+        const desc = document.getElementById('map-info-desc');
+        if (pill && desc) { pill.className = 'status-pill ' + s.key; desc.textContent = s.label; }
+        // Selected machine card dot (live)
+        const card = document.querySelector('.machine-card.selected');
+        if (card) {
+            const dot = card.querySelector('.status-dot-sm');
+            const t = card.querySelector('.mc-card-status-text');
+            if (dot) dot.className = 'status-dot-sm' + (s.key === 'busy' ? ' busy' : s.key === 'offline' ? ' offline' : '');
+            // The card already has a colored dot, so drop the leading status emoji from the text.
+            if (t) t.textContent = s.label.replace(/^\S+\s+/, '');
+        }
+        // Buy/Unlock button availability (only when the hub is showing this machine)
+        const goBtn = document.getElementById('map-go-btn');
+        if (goBtn && window.selectedMapMachine === window.currentMachineID) {
+            goBtn.style.display = (s.key === 'online') ? 'block' : 'none';
+        }
     }
 
     window.selectMachine = function (machineId, nextView) {
         window.currentMachineID = machineId;
-        const titleEl = document.getElementById('inv-machine-title');
-        if (titleEl) titleEl.innerText = machineId;
+        const titleEl = document.getElementById('unlock-machine-title');
+        if (titleEl) titleEl.innerText = String(machineId).replace(/^Machine (\d)$/, 'Machine 0$1');
         attachMachineListeners();
         switchView(nextView);
     };
@@ -867,14 +1169,14 @@
         if (window.debtLock && viewId !== 'topup-view') {
             showToast('Clear your outstanding balance to continue.', 'error');
             viewId = 'topup-view';
-        } else if (activeUserBalance < 0 && (viewId === 'buy-view' || viewId === 'unlock-view')) {
+        } else if (activeUserBalance < 0 && (viewId === 'unlock-view')) {
             showToast('Negative balance — please top up before buying.', 'error');
             viewId = 'topup-view';
         }
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
         const t = document.getElementById(viewId);
         if (t) t.classList.add('active-view');
-        if (viewId === 'map-view' && window.initMap) window.initMap();
+        if (viewId === 'machines-view' && window.initMap) window.initMap();
     };
 
     // ---------- AUTH MODE ----------
@@ -892,129 +1194,235 @@
     }
     window.setAuthMode = setAuthMode;
 
-    // ---------- CAMPUS MAP LOGIC ----------
-    let mapInitialized = false;
+    // ---------- LOCATION (asked ONCE on entry, then cached & reused) ----------
+    window.userLocation = null;        // { lat, lng } once granted
+    window.locationAsked = false;      // we only ever prompt a single time
+
+    window.requestLocationOnce = function () {
+        if (window.locationAsked || !navigator.geolocation) return;
+        window.locationAsked = true;
+        navigator.geolocation.getCurrentPosition(
+            pos => {
+                window.userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                if (window.renderAccordion) renderAccordion();   // fill in distances
+                if (window.drawUserMarker) drawUserMarker();
+            },
+            () => { /* denied/unavailable — app keeps working without it */ },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+        );
+    };
+
+    function haversineMeters(a, b) {
+        const R = 6371000, toRad = d => d * Math.PI / 180;
+        const dLat = toRad(b.lat - a.lat), dLng = toRad(b.lng - a.lng);
+        const s = Math.sin(dLat/2)**2 + Math.cos(toRad(a.lat))*Math.cos(toRad(b.lat))*Math.sin(dLng/2)**2;
+        return 2 * R * Math.asin(Math.sqrt(s));
+    }
+    function formatDistance(m) {
+        if (m == null) return '';
+        return m < 1000 ? `${Math.round(m)} m` : `${(m/1000).toFixed(m < 10000 ? 1 : 0)} km`;
+    }
+
+    // ---------- CAMPUS MAP + COLLAPSIBLE MACHINE HUB ----------
     let vendingMap = null;
-    let mapMarkers = [];
+    let mapMarkers = {};               // id -> Leaflet marker
     let userLocationMarker = null;
     let mapRouteLine = null;
+    let machinesUnsub = null;          // single live listener for all machines
     const MACHINE_MAP_ICON_URL = 'assets/vending-machine-map-icon.png';
+    window.hubMachines = [];           // [{ id, name, loc, lat, lng }]
+    window.hubMachinesData = {};       // id -> full machine node (state + inventory)
+    window.hubExpandedId = null;       // currently expanded card (accordion)
     window.selectedMapMachine = null;
     window.selectedMapMachineInfo = null;
 
     function getMachineMapIcon() {
-        return window.L.icon({
-            iconUrl: MACHINE_MAP_ICON_URL,
-            iconSize: [50, 45],
-            iconAnchor: [25, 43],
-            popupAnchor: [0, -40]
-        });
+        return window.L.icon({ iconUrl: MACHINE_MAP_ICON_URL, iconSize: [50, 45], iconAnchor: [25, 43], popupAnchor: [0, -40] });
+    }
+    function prettyMachineName(id) { return String(id).replace(/^Machine (\d)$/, 'Machine 0$1'); }
+    function esc(s) { return String(s).replace(/'/g, "\\'"); }
+
+    // Live status from a machine's /state (heartbeat + phase).
+    function computeMachineStatus(state) {
+        state = state || {};
+        const now = Date.now() + (window.serverTimeOffset || 0);
+        const online = state.heartbeat && (now - state.heartbeat < 120000);
+        if (!online) return { key: 'offline', label: '📵 Offline — not responding' };
+        const phase = state.phase || 'locked';
+        if (phase.startsWith('restock')) return { key: 'busy', label: '🔧 Being restocked' };
+        if (['preparing','unlocked','user_taking','checkout_processing','checkout_done','reminder_open_door'].includes(phase))
+            return { key: 'busy', label: '⏳ Busy — session in progress' };
+        return { key: 'online', label: '🟢 Available — ready to unlock' };
     }
 
-    window.initMap = async function () {
-        if (!window.L) {
-            showToast('Map library is still loading. Please try again.', 'info');
-            return;
-        }
-        if (mapInitialized) {
-            setTimeout(() => vendingMap.invalidateSize(), 150);
-            return;
-        }
+    // Build the live stock list for one machine (reuses the inv-item look + affordability).
+    function machineStockItemsHTML(data) {
+        const inv = (data && data.inventory) || {};
+        let html = '', shown = 0;
+        Object.keys(inv).filter(k => k.startsWith('s')).sort().forEach(k => {
+            const c = inv[k] || {};
+            if (c.en !== undefined && parseInt(c.en) === 0) return;
+            const name = c.name || ''; if (!name) return;
+            const qty = c.qty !== undefined ? parseInt(c.qty) : 0;
+            const max = c.max !== undefined ? parseInt(c.max) : 0;
+            const price = c.price !== undefined ? parseFloat(c.price) : 0;
+            const expiry = c.expiry || '';
+            const oos = qty === 0;
+            const pct = max > 0 ? Math.min(100, Math.round(qty / max * 100)) : (oos ? 0 : 100);
+            const barCls = oos ? 'out' : (max > 0 && qty <= max * 0.34 ? 'low' : '');
+            const expExpired = isExpiredDate(expiry);
+            const expBadge = expiry ? `<div style="font-size:11px;color:${expExpired ? 'var(--danger)' : '#2563eb'};font-weight:700;margin-top:4px;">${expExpired ? '⚠️ Expired' : 'Exp'}: ${expiry}</div>` : '';
+            const afford = oos ? '' : (activeUserBalance >= price
+                ? `<div class="afford-tag afford-yes">✓ You can afford this</div>`
+                : `<div class="afford-tag afford-no">Top up RM ${(price - activeUserBalance).toFixed(2)} more to buy</div>`);
+            html += `
+                <div class="inv-item ${oos ? 'out-of-stock' : ''}" style="flex-direction:column;align-items:stretch;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div>
+                            <strong style="font-size:16px;">${name}</strong>
+                            <div style="color:var(--text-light);font-size:13px;margin-top:2px;">RM ${price.toFixed(2)}</div>
+                            ${expBadge}
+                        </div>
+                        <div style="text-align:right;">
+                            <span style="font-size:22px;font-weight:800;color:${oos ? 'var(--danger)' : 'var(--primary)'};">${qty}</span>
+                            <div style="font-size:11px;color:var(--text-light);">${oos ? 'Out of stock' : 'in stock'}</div>
+                        </div>
+                    </div>
+                    <div class="stock-bar-wrap"><div class="stock-bar ${barCls}" style="width:${pct}%"></div></div>
+                    ${afford}
+                </div>`;
+            shown++;
+        });
+        if (!shown) html = "<p class='text-muted' style='text-align:center;padding:14px;'>No items available right now.</p>";
+        return html;
+    }
 
-        vendingMap = window.L.map('vending-map').setView([1.5583, 103.6420], 16);
-        window.L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap'
-        }).addTo(vendingMap);
-
-        try {
-            const snap = await get(ref(db, 'vendingMachine/machines'));
-            const bounds = [];
-            if (snap.exists()) {
-                snap.forEach(childSnap => {
-                    const mId = childSnap.key;
-                    const mData = childSnap.val() || {};
-                    const info = mData.info || {};
-                    const lat = parseFloat(info.lat) || 1.5583;
-                    const lng = parseFloat(info.lng) || 103.6420;
-                    const locName = info.locationName || 'Unknown Location';
-                    const marker = window.L.marker([lat, lng], { icon: getMachineMapIcon(), title: mId }).addTo(vendingMap);
-                    marker.bindPopup(`<strong>${mId}</strong><br>${locName}`);
-                    marker.on('click', () => fetchMachineDetailsForMap({ id: mId, name: mId, loc: locName, lat, lng }));
-                    mapMarkers.push(marker);
-                    bounds.push([lat, lng]);
-                });
-            }
-            if (bounds.length > 1) vendingMap.fitBounds(bounds, { padding: [24, 24], maxZoom: 17 });
-            else if (bounds.length === 1) vendingMap.setView(bounds[0], 17);
-        } catch (e) {
-            console.error('Error loading machines for map:', e);
-            document.getElementById('map-info-desc').innerText = 'Error loading machine locations.';
-        }
-
-        mapInitialized = true;
-        setTimeout(() => vendingMap.invalidateSize(), 150);
+    // Render the whole accordion — one collapsible card per machine.
+    window.renderAccordion = function () {
+        const wrap = document.getElementById('machine-card-list');
+        if (!wrap) return;
+        if (!window.hubMachines.length) { wrap.innerHTML = "<div class='hub-empty'>No machines found yet.</div>"; return; }
+        wrap.innerHTML = window.hubMachines.map(m => {
+            const data = window.hubMachinesData[m.id] || {};
+            const st = computeMachineStatus(data.state);
+            const open = (m.id === window.hubExpandedId);
+            const hasLoc = Number.isFinite(m.lat) && Number.isFinite(m.lng);
+            const distHtml = (window.userLocation && hasLoc)
+                ? `<div class="acc-dist"><strong>${formatDistance(haversineMeters(window.userLocation, m))}</strong>away</div>` : '';
+            const canBuy = st.key === 'online';
+            return `
+                <div class="machine-acc${open ? ' open' : ''}" data-id="${m.id}">
+                    <div class="acc-head" onclick="toggleMachine('${esc(m.id)}')">
+                        <div class="acc-ic">🏪</div>
+                        <div style="min-width:0;flex:1;">
+                            <div class="acc-title">${prettyMachineName(m.name)}</div>
+                            <div class="acc-loc">📍 ${m.loc}</div>
+                        </div>
+                        <div class="acc-right">${distHtml}<span class="acc-chev">⌄</span></div>
+                    </div>
+                    <div class="acc-body-wrap"><div class="acc-body-inner"><div class="acc-body">
+                        <div class="acc-statusrow"><span class="status-pill ${st.key}">${st.label}</span></div>
+                        <div class="acc-section-label">Available now</div>
+                        ${machineStockItemsHTML(data)}
+                        <div class="acc-actions">
+                            <button class="btn-outline" onclick="event.stopPropagation();getDirectionsToMachineById('${esc(m.id)}')">🧭 Directions</button>
+                            <button ${canBuy ? '' : 'disabled style="opacity:.55;"'} onclick="event.stopPropagation();selectMachine('${esc(m.id)}','unlock-view')">🔓 Buy / Unlock</button>
+                        </div>
+                    </div></div></div>
+                </div>`;
+        }).join('');
     };
 
-    window.fetchMachineDetailsForMap = async function (machineInfo) {
-        window.selectedMapMachine = machineInfo.id;
-        window.selectedMapMachineInfo = machineInfo;
-        document.getElementById('map-info-title').innerText = `${machineInfo.name} (${machineInfo.loc})`;
-        document.getElementById('map-info-desc').innerText = 'Loading live data...';
-        document.getElementById('map-info-stock').innerHTML = "<div class='loader'></div>";
-        document.getElementById('map-go-btn').style.display = 'none';
-        document.getElementById('map-directions-btn').style.display = 'none';
-        const directionsStatus = document.getElementById('map-directions-status');
-        if (directionsStatus) { directionsStatus.style.display = 'none'; directionsStatus.textContent = ''; }
-
-        try {
-            const snap = await get(ref(db, `vendingMachine/machines/${machineInfo.id}`));
-            if (!snap.exists()) {
-                document.getElementById('map-info-desc').innerText = 'Status: ⚪ Not installed yet';
-                document.getElementById('map-info-stock').innerHTML = '';
-                return;
+    // Expand one card / collapse it on a second tap (accordion: only one open).
+    window.toggleMachine = function (id) {
+        const opening = (window.hubExpandedId !== id);
+        window.hubExpandedId = opening ? id : null;
+        document.querySelectorAll('#machine-card-list .machine-acc').forEach(el => {
+            el.classList.toggle('open', el.dataset.id === window.hubExpandedId);
+        });
+        if (opening) {
+            const m = window.hubMachines.find(x => x.id === id);
+            if (m) {
+                window.selectedMapMachine = id; window.selectedMapMachineInfo = m;
+                if (vendingMap && Number.isFinite(m.lat) && Number.isFinite(m.lng)) vendingMap.panTo([m.lat, m.lng]);
+                const mk = mapMarkers[id]; if (mk) mk.openPopup();
             }
-            const data = snap.val() || {};
-            const state = data.state || {};
-            const now = Date.now() + (window.serverTimeOffset || 0);
-            const isOnline = state.heartbeat && (now - state.heartbeat < 120000);
-            const phase = state.phase || 'locked';
-            const busy = ['preparing', 'unlocked', 'user_taking', 'checkout_processing', 'checkout_done', 'reminder_open_door'].includes(phase);
-            const restock = phase.startsWith('restock');
+            const card = document.querySelector('#machine-card-list .machine-acc.open');
+            if (card) setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 130);
+        }
+    };
 
-            let statusHtml = "<span style='color:var(--success);font-weight:700;'>🟢 Available</span>";
-            if (!isOnline) statusHtml = "<span style='color:var(--danger);font-weight:700;'>📵 Offline</span>";
-            else if (restock) statusHtml = "<span style='color:var(--warning);font-weight:700;'>🔧 Restocking</span>";
-            else if (busy) statusHtml = "<span style='color:var(--warning);font-weight:700;'>⏳ Busy</span>";
-            document.getElementById('map-info-desc').innerHTML = `Status: ${statusHtml}`;
-
-            const inv = data.inventory || {};
-            const items = [];
-            Object.keys(inv).forEach(key => {
-                const item = inv[key] || {};
-                if (key.startsWith('s') && item.name && parseInt(item.qty || 0) > 0 && parseInt(item.en || 1) !== 0) items.push(item);
-            });
-            items.sort((a, b) => parseInt(b.qty || 0) - parseInt(a.qty || 0));
-
-            let stockHtml = '';
-            if (items.length === 0) {
-                stockHtml = "<div class='text-muted' style='font-size:13px;text-align:center;'>Currently out of stock.</div>";
-            } else {
-                stockHtml = "<div style='font-size:11px;color:var(--text-light);margin-bottom:6px;font-weight:700;letter-spacing:0.5px;'>AVAILABLE NOW:</div>";
-                items.slice(0, 3).forEach(item => {
-                    stockHtml += `<div style='display:flex;justify-content:space-between;margin-bottom:6px;font-size:14px;background:var(--bg);padding:6px 10px;border-radius:6px;'>
-                        <span style="font-weight:600;">${item.name}</span>
-                        <span style='font-weight:800;color:var(--primary);'>${parseInt(item.qty || 0)} left</span>
-                    </div>`;
+    window.initMap = function () {
+        if (!window.L) { showToast('Map library is still loading. Please try again.', 'info'); return; }
+        if (!vendingMap) {
+            vendingMap = window.L.map('vending-map', { zoomControl: true }).setView([1.5583, 103.6420], 16);
+            window.L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(vendingMap);
+        }
+        // ONE live listener feeds status + stock for ALL machines into the accordion.
+        if (!machinesUnsub) {
+            machinesUnsub = onValue(ref(db, 'vendingMachine/machines'), snap => {
+                window.hubMachinesData = {};
+                const list = [];
+                if (snap.exists()) snap.forEach(c => {
+                    const d = c.val() || {};
+                    window.hubMachinesData[c.key] = d;
+                    const info = d.info || {};
+                    list.push({
+                        id: c.key, name: c.key, loc: info.locationName || 'Unknown Location',
+                        lat: parseFloat(info.lat) || 1.5583, lng: parseFloat(info.lng) || 103.6420
+                    });
                 });
-                if (items.length > 3) stockHtml += `<div style='font-size:12px;color:var(--text-light);margin-top:6px;text-align:center;'>+ ${items.length - 3} more items available</div>`;
-            }
-            document.getElementById('map-info-stock').innerHTML = stockHtml;
-            const directionsBtn = document.getElementById('map-directions-btn');
-            if (directionsBtn && Number.isFinite(machineInfo.lat) && Number.isFinite(machineInfo.lng)) directionsBtn.style.display = 'block';
-            if (isOnline && items.length > 0 && !busy && !restock) document.getElementById('map-go-btn').style.display = 'block';
-        } catch (e) {
-            document.getElementById('map-info-desc').innerText = 'Error loading data.';
-            document.getElementById('map-info-stock').innerHTML = '';
+                window.hubMachines = list;
+                syncMapMarkers();
+                renderAccordion();
+            }, () => {
+                const wrap = document.getElementById('machine-card-list');
+                if (wrap) wrap.innerHTML = "<div class='hub-empty'>Couldn't load machine locations.</div>";
+            });
+        } else {
+            renderAccordion();
+        }
+        setTimeout(() => { if (vendingMap) vendingMap.invalidateSize(); if (window.userLocation) drawUserMarker(); }, 150);
+    };
+
+    // Add/update one pin per machine; fit the view once.
+    function syncMapMarkers() {
+        if (!vendingMap || !window.L) return;
+        const bounds = [];
+        window.hubMachines.forEach(m => {
+            if (Number.isFinite(m.lat) && Number.isFinite(m.lng)) bounds.push([m.lat, m.lng]);
+            if (mapMarkers[m.id]) { mapMarkers[m.id].setLatLng([m.lat, m.lng]); return; }
+            const marker = window.L.marker([m.lat, m.lng], { icon: getMachineMapIcon(), title: m.id }).addTo(vendingMap);
+            marker.bindPopup(`<strong>${prettyMachineName(m.id)}</strong><br>${m.loc}`);
+            marker.on('click', () => { if (window.hubExpandedId !== m.id) toggleMachine(m.id); });
+            mapMarkers[m.id] = marker;
+        });
+        if (!window._mapFitted && bounds.length) {
+            if (bounds.length > 1) vendingMap.fitBounds(bounds, { padding: [24, 24], maxZoom: 17 });
+            else vendingMap.setView(bounds[0], 17);
+            window._mapFitted = true;
+        }
+    }
+
+    function drawUserMarker() {
+        if (!vendingMap || !window.L || !window.userLocation) return;
+        const ll = [window.userLocation.lat, window.userLocation.lng];
+        if (userLocationMarker) userLocationMarker.setLatLng(ll);
+        else userLocationMarker = window.L.circleMarker(ll, {
+            radius: 7, color: '#1463d6', fillColor: '#1463d6', fillOpacity: 0.9, weight: 3
+        }).addTo(vendingMap).bindPopup('You are here');
+    }
+
+    window.centerOnUser = function () {
+        if (window.userLocation) {
+            drawUserMarker();
+            if (vendingMap) vendingMap.setView([window.userLocation.lat, window.userLocation.lng], 17);
+        } else {
+            window.locationAsked = false;   // allow a fresh attempt if it was denied/unavailable
+            requestLocationOnce();
+            showToast('Finding your location…', 'info');
         }
     };
 
@@ -1022,79 +1430,46 @@
         if (!vendingMap || !window.L) return;
         const originLatLng = [origin.lat, origin.lng];
         const destLatLng = [destination.lat, destination.lng];
-        if (userLocationMarker) userLocationMarker.setLatLng(originLatLng);
-        else {
-            userLocationMarker = window.L.circleMarker(originLatLng, {
-                radius: 7,
-                color: '#2563eb',
-                fillColor: '#2563eb',
-                fillOpacity: 0.9,
-                weight: 3
-            }).addTo(vendingMap).bindPopup('You are here');
-        }
+        drawUserMarker();
         if (mapRouteLine) mapRouteLine.setLatLngs([originLatLng, destLatLng]);
-        else {
-            mapRouteLine = window.L.polyline([originLatLng, destLatLng], {
-                color: '#2563eb',
-                weight: 4,
-                opacity: 0.85,
-                dashArray: '7, 8'
-            }).addTo(vendingMap);
-        }
+        else mapRouteLine = window.L.polyline([originLatLng, destLatLng], {
+            color: '#1463d6', weight: 4, opacity: 0.85, dashArray: '7, 8'
+        }).addTo(vendingMap);
         vendingMap.fitBounds([originLatLng, destLatLng], { padding: [28, 28], maxZoom: 17 });
     }
 
     function buildGoogleMapsDirectionsUrl(destination, origin) {
-        const params = new URLSearchParams({
-            api: '1',
-            destination: `${destination.lat},${destination.lng}`,
-            travelmode: 'walking'
-        });
+        const params = new URLSearchParams({ api: '1', destination: `${destination.lat},${destination.lng}`, travelmode: 'walking' });
         if (origin) params.set('origin', `${origin.lat},${origin.lng}`);
         return `https://www.google.com/maps/dir/?${params.toString()}`;
     }
 
-    window.getDirectionsToMachine = function () {
-        const machine = window.selectedMapMachineInfo;
+    window.getDirectionsToMachineById = function (id) {
+        const machine = window.hubMachines.find(x => x.id === id) || window.selectedMapMachineInfo;
         if (!machine) { showToast('Select a machine first.', 'info'); return; }
         const destination = { lat: Number(machine.lat), lng: Number(machine.lng) };
         if (!Number.isFinite(destination.lat) || !Number.isFinite(destination.lng)) {
-            showToast('This machine has no map location yet.', 'error');
-            return;
+            showToast('This machine has no map location yet.', 'error'); return;
         }
-        const status = document.getElementById('map-directions-status');
-        const setStatus = (text, color = 'var(--text-light)') => {
-            if (!status) return;
-            status.style.display = 'block';
-            status.style.color = color;
-            status.textContent = text;
-        };
+        window.selectedMapMachine = id; window.selectedMapMachineInfo = machine;
         let mapsWindow = null;
         try { mapsWindow = window.open('about:blank', '_blank'); } catch (e) {}
         const openDirections = (origin) => {
             const url = buildGoogleMapsDirectionsUrl(destination, origin);
-            if (mapsWindow) mapsWindow.location.href = url;
-            else window.open(url, '_blank', 'noopener');
+            if (mapsWindow) mapsWindow.location.href = url; else window.open(url, '_blank', 'noopener');
         };
-        if (!navigator.geolocation) {
-            setStatus('Opening Google Maps directions.');
+        // Reuse the location captured on entry — no second permission prompt.
+        if (window.userLocation) {
+            updateMapRoutePreview(window.userLocation, destination);
+            showToast('Route shown on map · Google Maps opened ✅', 'success');
+            openDirections(window.userLocation);
+        } else {
+            showToast('Opening Google Maps directions…', 'info');
             openDirections(null);
-            return;
         }
-        setStatus('Finding your location...');
-        navigator.geolocation.getCurrentPosition(pos => {
-            const origin = {
-                lat: pos.coords.latitude,
-                lng: pos.coords.longitude
-            };
-            updateMapRoutePreview(origin, destination);
-            setStatus('Route preview shown. Google Maps opened.', 'var(--success)');
-            openDirections(origin);
-        }, () => {
-            setStatus('Location unavailable. Opening Google Maps to the machine.', 'var(--warning)');
-            openDirections(null);
-        }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
     };
+    // Back-compat: directions for the currently selected machine.
+    window.getDirectionsToMachine = function () { window.getDirectionsToMachineById(window.selectedMapMachine); };
     document.getElementById('signup-btn').addEventListener('click', () => {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
@@ -1137,7 +1512,7 @@
     document.getElementById('logout-btn').addEventListener('click', () => {
         appConfirm({
             icon: '🚪', title: 'Log Out',
-            message: 'Are you sure you want to log out of UTM Smart Vending?',
+            message: 'Are you sure you want to log out of Campus-VendIQ?',
             confirmText: 'Log Out',
             onConfirm: () => signOut(auth)
         });
@@ -1148,6 +1523,9 @@
             currentUserUID = user.uid;
             switchView('home-view');
             listenToUserData();
+            // Ask for location ONCE, right after entering — then it's cached and
+            // reused for the map & directions without prompting again.
+            requestLocationOnce();
         } else {
             currentUserUID = null;
             setAuthMode('login');
@@ -1361,6 +1739,7 @@
 
             // Refresh affordability hints with the new balance (local re-render, no DB read).
             if (window.renderStudentInventory) window.renderStudentInventory();
+            if (window.renderAccordion && window.hubMachines && window.hubMachines.length) window.renderAccordion();
 
             // Debt lockdown: negative balance = took more than paid → top-up only.
             if (activeUserBalance < 0) enterDebtLock(activeUserBalance);

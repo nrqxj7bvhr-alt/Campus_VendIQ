@@ -2,213 +2,2105 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Campus VendIQ</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0b1f4d">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="VendIQ">
-    <link rel="apple-touch-icon" href="icon.svg">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus-VendIQ — Admin</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <style>
         :root {
-            --primary: #1559d6; --primary-2: #3b82f6; --accent: #22d3ee;
-            --ink: #0f172a; --muted: #64748b; --border: #e2e8f0;
-            --danger: #ef4444; --success: #16a34a; --card: #ffffff;
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --primary-light: #e0e7ff;
+            --success: #059669;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --info: #0891b2;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
+            --radius: 12px;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: var(--ink);
-            min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center;
-            padding: 22px; position: relative; overflow: hidden;
-            background: radial-gradient(120% 90% at 80% -10%, #1e3a8a 0%, #0b1f4d 55%, #081538 100%);
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); min-height: 100vh; }
+
+        /* ---- STATUS BAR ---- */
+        #status-bar {
+            position: fixed; top: 0; left: 0; right: 0;
+            background: var(--primary); color: white;
+            padding: 10px 16px; display: none;
+            justify-content: space-between; align-items: center;
+            z-index: 900; font-size: 13px; gap: 8px;
         }
-        /* floating glow blobs */
-        body::before, body::after {
-            content: ''; position: absolute; border-radius: 50%; filter: blur(60px); opacity: .5; z-index: 0;
+        .status-left { display: flex; align-items: center; gap: 8px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; display: inline-block; flex-shrink: 0; }
+        #phase-badge { background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px; font-size: 11px; }
+        .status-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        #camera-toggle-btn {
+            background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.35);
+            border-radius: 20px; padding: 4px 12px; cursor: pointer; font-size: 12px; font-weight: 700;
+            width: auto; margin: 0; transition: background 0.2s;
         }
-        body::before { width: 320px; height: 320px; background: #2563eb; top: -90px; left: -80px; }
-        body::after { width: 280px; height: 280px; background: #22d3ee; bottom: -90px; right: -70px; opacity: .35; }
+        #camera-toggle-btn:hover { background: rgba(255,255,255,0.28); filter: none; }
+        #camera-toggle-btn.cam-off { background: rgba(220,38,38,0.5); border-color: rgba(239,68,68,0.6); }
 
-        .auth-card {
-            position: relative; z-index: 1; width: 100%; max-width: 400px; background: var(--card);
-            border-radius: 26px; box-shadow: 0 30px 70px rgba(2, 12, 40, .55); overflow: hidden;
-            animation: rise .45s cubic-bezier(.2,.8,.2,1);
+        /* ---- FAB ---- */
+        #fab-camera {
+            position: fixed; bottom: 24px; right: 24px;
+            width: 56px; height: 56px; border-radius: 50%;
+            background: var(--info); color: white; border: none; cursor: pointer;
+            font-size: 22px; box-shadow: var(--shadow-lg);
+            display: none; align-items: center; justify-content: center;
+            z-index: 800; transition: transform 0.2s, background 0.2s;
+            padding: 0; margin: 0; line-height: 1;
         }
-        @keyframes rise { from { transform: translateY(24px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
-
-        .hero { text-align: center; padding: 36px 24px 26px; color: #fff; position: relative;
-            background: linear-gradient(140deg, #1559d6, #1e40af 60%, #15307e); }
-        .badge {
-            width: 66px; height: 66px; margin: 0 auto 12px; border-radius: 20px;
-            background: linear-gradient(150deg, #38bdf8, #2563eb); display: flex; align-items: center; justify-content: center;
-            font-size: 34px; box-shadow: 0 10px 26px rgba(2, 12, 40, .45); border: 1px solid rgba(255,255,255,.25);
+        #fab-camera:hover { transform: scale(1.1); background: #0e7490; filter: none; }
+        #fab-tooltip {
+            position: fixed; bottom: 90px; right: 16px;
+            background: #1e293b; color: white; font-size: 12px; font-weight: 600;
+            padding: 5px 10px; border-radius: 6px; display: none;
+            z-index: 800; white-space: nowrap;
         }
-        .hero h1 { font-size: 25px; font-weight: 800; letter-spacing: -.4px; }
-        .hero h1 .iq { color: var(--accent); }
-        .hero p { font-size: 12.5px; opacity: .82; margin-top: 4px; letter-spacing: 2px; text-transform: uppercase; }
 
-        .body { padding: 22px 24px 26px; }
-        .segment { position: relative; display: flex; background: #eef3fb; border-radius: 14px; padding: 5px; margin-bottom: 20px; }
-        .seg-pill { position: absolute; top: 5px; left: 5px; width: calc(50% - 5px); height: calc(100% - 10px);
-            background: #fff; border-radius: 10px; box-shadow: 0 3px 10px rgba(21,89,214,.18);
-            transition: transform .28s cubic-bezier(.4,0,.2,1); }
-        .segment.admin .seg-pill { transform: translateX(100%); }
-        .seg-btn { flex: 1; position: relative; z-index: 1; text-align: center; padding: 11px 0; font-size: 14px;
-            font-weight: 700; cursor: pointer; color: var(--muted); transition: color .2s; user-select: none; }
-        .seg-btn.active { color: var(--primary); }
+        /* ---- LAYOUT ---- */
+        .app-container { max-width: 460px; margin: 0 auto; padding: 16px; }
+        .app-container.with-bar { padding-top: 60px; }
 
-        label.fld { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin: 0 0 6px 3px; }
-        .inp { position: relative; margin-bottom: 15px; }
-        input { width: 100%; padding: 14px 15px; border: 1.6px solid var(--border); border-radius: 13px;
-            font-size: 15px; color: var(--ink); background: #f8fafc; transition: border-color .15s, background .15s; }
-        input:focus { outline: none; border-color: var(--primary-2); background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,.12); }
-        .pw-toggle { position: absolute; right: 13px; top: 13px; font-size: 18px; cursor: pointer; opacity: .5; user-select: none; }
-        .pw-toggle:hover { opacity: 1; }
+        /* ---- VIEWS ---- */
+        .view { display: none; }
+        .active-view { display: block; animation: viewIn .26s cubic-bezier(.4,0,.2,1); }
+        @keyframes viewIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @media (prefers-reduced-motion: reduce) { .active-view { animation: none; } }
 
-        button.primary { width: 100%; padding: 15px; border: none; border-radius: 14px; font-size: 16px; font-weight: 800;
-            color: #fff; cursor: pointer; background: linear-gradient(135deg, #2563eb, #1559d6); margin-top: 4px;
-            box-shadow: 0 10px 24px rgba(21,89,214,.35); transition: transform .12s, filter .15s, box-shadow .15s; }
-        button.primary:hover { filter: brightness(1.05); box-shadow: 0 12px 28px rgba(21,89,214,.45); }
-        button.primary:active { transform: scale(.98); }
-        button.primary:disabled { opacity: .65; }
+        /* ---- CARDS ---- */
+        .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin-bottom: 12px; }
 
-        .row-between { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; }
-        .link { color: var(--primary); font-size: 13px; text-decoration: none; font-weight: 600; cursor: pointer; }
-        .link:hover { text-decoration: underline; }
-        .err { color: var(--danger); font-size: 13px; margin-top: 13px; text-align: center; min-height: 18px; font-weight: 600; }
-        .err.ok { color: var(--success); }
-        .hint { font-size: 12px; color: var(--muted); text-align: center; margin-top: 16px; line-height: 1.55; }
-        .spin { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%;
-            display: inline-block; vertical-align: middle; animation: sp .7s linear infinite; }
-        @keyframes sp { to { transform: rotate(360deg); } }
-        .safe { height: env(safe-area-inset-bottom); }
+        /* ---- PAGE HEADER ---- */
+        .page-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+        .page-header h2 { font-size: 20px; color: var(--text); font-weight: 700; }
+        .back-btn { background: none; border: none; color: var(--primary); font-size: 22px; cursor: pointer; padding: 4px; line-height: 1; width: auto; margin: 0; flex-shrink: 0; }
+        .page-header .hdr-actions { display: flex; gap: 6px; margin-left: auto; align-items: center; }
+
+        /* ---- TYPOGRAPHY ---- */
+        .text-muted { color: var(--text-light); font-size: 13px; }
+        .text-danger { color: var(--danger); }
+
+        /* ---- INPUTS ---- */
+        input {
+            width: 100%; padding: 11px 14px; border: 1.5px solid var(--border);
+            border-radius: 8px; font-size: 15px; color: var(--text); background: white;
+            margin-bottom: 10px; transition: border-color 0.2s; box-sizing: border-box;
+        }
+        input:focus { outline: none; border-color: var(--primary); }
+
+        /* ---- BUTTONS ---- */
+        button {
+            width: 100%; padding: 12px; background: var(--primary); color: white;
+            border: none; border-radius: 8px; cursor: pointer; font-size: 15px;
+            font-weight: 600; transition: background 0.15s, transform 0.1s; margin-top: 6px;
+        }
+        button:hover { filter: brightness(88%); }
+        button:active { transform: scale(0.98); }
+        .btn-success { background: var(--success); }
+        .btn-danger { background: var(--danger); }
+        .btn-warning { background: var(--warning); }
+        .btn-info { background: var(--info); }
+        .btn-secondary { background: #64748b; }
+        .btn-purple { background: #6f42c1; }
+        .btn-sm { padding: 6px 12px; font-size: 13px; margin-top: 0; width: auto; }
+        .btn-outline { background: none !important; color: var(--primary); border: 1.5px solid var(--primary); }
+        .btn-outline:hover { background: var(--primary-light) !important; filter: none; }
+
+        /* ---- BULK SELECTION BAR (Select all / Clear / Delete) ---- */
+        .bulk-bar {
+            background: linear-gradient(180deg,#ffffff,#f7f9fc);
+            border: 1px solid var(--border); border-radius: 14px;
+            padding: 13px 14px; margin-bottom: 14px; box-shadow: var(--shadow);
+        }
+        .bulk-bar-top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .bulk-bar-icon { width: 36px; height: 36px; border-radius: 11px; flex-shrink: 0;
+            background: var(--primary-light); color: var(--primary);
+            display: flex; align-items: center; justify-content: center; font-size: 17px; }
+        .bulk-bar-title { font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.2; }
+        .bulk-bar-sub { font-size: 11.5px; color: var(--text-light); margin-top: 1px; }
+        .bulk-count { margin-left: auto; flex-shrink: 0; font-size: 12px; font-weight: 800;
+            color: var(--primary); background: var(--primary-light); padding: 5px 12px; border-radius: 20px; }
+        .bulk-count.has { color: #fff; background: var(--primary); }
+        .bulk-actions { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 8px; }
+        .bulk-actions .bbtn { margin: 0; width: 100%; padding: 10px 8px; border-radius: 10px;
+            font-size: 13px; font-weight: 700; display: inline-flex; align-items: center;
+            justify-content: center; gap: 6px; box-shadow: none; transition: filter .15s, transform .1s, background .15s; }
+        .bbtn-sel { background: var(--primary-light); color: var(--primary); }
+        .bbtn-sel:hover { background: #d4ddff; filter: none; }
+        .bbtn-clear { background: #f1f5f9; color: var(--text-light); }
+        .bbtn-clear:hover { background: #e6ebf2; filter: none; }
+        .bbtn-del { background: linear-gradient(135deg,#ef4d5e,#dc2626); color: #fff; }
+        .bbtn-del:hover { filter: brightness(96%); }
+
+        /* ---- FOLDABLE AI-CHECKER ACTION (purchase review) ---- */
+        .ai-menu { margin-top: 12px; }
+        .ai-menu summary { list-style: none; }
+        .ai-menu summary::-webkit-details-marker { display: none; }
+        .ai-summary { background: linear-gradient(135deg,#7c4dff,#6f42c1); color: #fff; border-radius: 10px;
+            padding: 11px; font-weight: 700; font-size: 14px; text-align: center; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 7px; user-select: none; }
+        .ai-summary:hover { filter: brightness(96%); }
+        .ai-menu[open] .ai-summary { border-radius: 10px 10px 0 0; }
+        .ai-menu[open] .caret { transform: rotate(180deg); }
+        .caret { display: inline-block; transition: transform .2s; font-size: 12px; }
+        .ai-menu-pop { border: 1px solid #e6e0fb; border-top: none; border-radius: 0 0 10px 10px;
+            padding: 8px; background: #faf8ff; }
+        .ai-menu-label { font-size: 10.5px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase;
+            color: var(--text-light); padding: 2px 4px 8px; }
+        .ai-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .ai-opt { margin: 0; background: #fff; color: #5b34b0; border: 1px solid #e6e0fb; border-radius: 8px;
+            padding: 10px 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; box-shadow: none; }
+        .ai-opt:hover { background: #f1ebff; filter: none; }
+        .ra-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+        .ra-row button { margin: 0; }
+
+        /* ---- STAT GRID ---- */
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+        .stat-card { background: var(--card); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); text-align: center; }
+        .stat-card.g-blue { background: linear-gradient(135deg,#4f46e5,#7c3aed); color: white; }
+        .stat-card.g-green { background: linear-gradient(135deg,#059669,#10b981); color: white; }
+        .stat-card .stat-label { font-size: 12px; opacity: 0.85; margin-bottom: 6px; }
+        .stat-card .stat-value { font-size: 24px; font-weight: 800; }
+        .stat-card .stat-sub { font-size: 11px; opacity: 0.75; margin-top: 2px; }
+
+        /* ---- ALERTS ---- */
+        .alert-box { background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid var(--warning); border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; }
+        .alert-box.danger { background: #fef2f2; border-color: #fca5a5; border-left-color: var(--danger); }
+        .alert-box h4 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+        .alert-box ul { padding-left: 18px; font-size: 13px; }
+        .alert-box li { margin-bottom: 3px; }
+        .alert-box a { color: var(--danger); font-weight: 700; }
+
+        /* ---- QUICK ACTIONS ---- */
+        .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .quick-actions button { margin: 0; font-size: 14px; }
+        .span-2 { grid-column: span 2; }
+
+        /* ---- CARDS / LIST ---- */
+        .list-card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+            padding: 14px; margin-bottom: 8px; box-shadow: var(--shadow);
+        }
+        .list-card.alert-card { border-left: 4px solid var(--danger); }
+        .list-card.low-stock { border-left: 4px solid var(--danger); background: #fef2f2; }
+        .list-card h4 { font-size: 15px; color: var(--text); margin-bottom: 4px; }
+        .list-card p { font-size: 13px; color: var(--text-light); margin: 3px 0; }
+
+        .user-card {
+            background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--primary);
+            border-radius: 10px; padding: 14px; margin-bottom: 8px; cursor: pointer;
+            transition: background 0.15s; box-shadow: var(--shadow);
+        }
+        .user-card:hover { background: var(--primary-light); }
+
+        /* ---- BADGES ---- */
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: 600; color: white; background: var(--primary); }
+        .badge-green { background: var(--success); }
+        .badge-red { background: var(--danger); }
+        .badge-grey { background: #94a3b8; }
+
+        /* ---- INVENTORY ---- */
+        .inventory-item {
+            background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--info);
+            border-radius: 8px; padding: 12px; margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow);
+        }
+        .inventory-item.low-stock { border-left-color: var(--danger); background: #fef2f2; }
+        .stock-bar-wrap { height: 4px; background: var(--border); border-radius: 2px; margin-top: 5px; width: 90px; }
+        .stock-bar { height: 100%; border-radius: 2px; background: var(--success); transition: width 0.4s; }
+        .stock-bar.low { background: var(--danger); }
+
+        /* ---- MACHINE CARD ---- */
+        .machine-card { border: 2px solid var(--primary); padding: 16px; border-radius: 10px; cursor: pointer; transition: 0.2s; background: var(--card); box-shadow: var(--shadow); margin-bottom: 10px; }
+        .machine-card:hover { background: var(--primary); color: white; }
+        .machine-card:hover p { color: rgba(255,255,255,0.8); }
+
+        /* ---- MODALS ---- */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-box { background: white; padding: 24px; border-radius: var(--radius); width: 92%; max-width: 380px; max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
+        .modal-box h3 { font-size: 18px; margin-bottom: 6px; color: var(--text); }
+
+        /* ---- STEPPER ---- */
+        .stepper-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+        .stepper-btn { background: var(--primary); color: white; border: none; border-radius: 8px; padding: 10px 16px; font-size: 15px; font-weight: 600; cursor: pointer; flex: 1; max-width: 110px; transition: 0.15s; width: auto; margin: 0; }
+        .stepper-btn:hover { background: var(--primary-dark); filter: none; }
+        .stepper-btn:disabled { background: var(--border); color: #94a3b8; cursor: not-allowed; }
+        .stepper-count { font-size: 14px; font-weight: 600; color: var(--text-light); min-width: 60px; text-align: center; }
+
+        /* ---- CMD STATUS ---- */
+        #cmd-status { display: none; font-size: 13px; font-weight: 600; padding: 8px 12px; background: #eef2ff; border-radius: 6px; margin: 8px 0; color: var(--primary); }
+
+        /* ---- LOGIN ---- */
+        .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .login-card { background: white; border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: 32px; width: 100%; max-width: 380px; }
+        .login-card h2 { font-size: 26px; color: var(--primary); font-weight: 800; margin-bottom: 4px; }
+        .login-card .subtitle { color: var(--text-light); margin-bottom: 24px; font-size: 15px; }
+
+        /* ---- NATIVE-FEEL DIALOG ---- */
+        .app-dialog-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            z-index: 4000; align-items: center; justify-content: center;
+            -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+        .app-dialog-overlay.show { display: flex; }
+        .app-dialog { background: var(--card); width: 90%; max-width: 360px; border-radius: 18px;
+            padding: 26px 24px 22px; text-align: center; box-shadow: 0 14px 44px rgba(0,0,0,0.28);
+            animation: dlgPop .18s ease-out; }
+        @keyframes dlgPop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .app-dialog .ad-icon { font-size: 42px; margin-bottom: 8px; line-height: 1; }
+        .app-dialog h3 { margin-bottom: 6px; font-size: 19px; }
+        .app-dialog p { color: var(--text-light); font-size: 14px; margin-bottom: 20px; line-height: 1.45; white-space: pre-line; }
+        .ad-actions { display: flex; gap: 10px; }
+        .ad-actions button { flex: 1; margin: 0; padding: 13px; border-radius: 10px; }
+        .ad-btn-cancel { background: #e9ecef !important; color: var(--text) !important; }
+        @media (max-width: 480px) {
+            .app-dialog-overlay { align-items: flex-end; }
+            .app-dialog { width: 100%; max-width: 100%; border-radius: 22px 22px 0 0; padding-bottom: 30px; animation: sheetUp .26s ease-out; }
+            @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+            .app-dialog::before { content: ''; display: block; width: 40px; height: 4px; border-radius: 3px; background: var(--border); margin: -8px auto 14px; }
+        }
+
+        /* ---- TOAST ---- */
+        #toast-host { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 4500;
+            display: flex; flex-direction: column; gap: 8px; width: max-content; max-width: 90%; pointer-events: none; }
+        .toast { background: var(--text); color: #fff; padding: 11px 18px; border-radius: 22px; font-size: 13px;
+            font-weight: 600; box-shadow: var(--shadow-lg); opacity: 0; transform: translateY(12px);
+            transition: opacity .25s, transform .25s; text-align: center; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { background: var(--success); } .toast.error { background: var(--danger); } .toast.info { background: var(--primary); }
     </style>
 </head>
 <body>
-    <div class="auth-card">
-        <div class="hero">
-            <div class="badge">🛒</div>
-            <h1>Campus Vend<span class="iq">IQ</span></h1>
-            <p>Smart · Cashless · Campus</p>
+
+<!-- NATIVE-FEEL CONFIRM DIALOG -->
+<div id="app-dialog-overlay" class="app-dialog-overlay">
+    <div class="app-dialog">
+        <div class="ad-icon" id="ad-icon">❓</div>
+        <h3 id="ad-title">Are you sure?</h3>
+        <p id="ad-msg"></p>
+        <div class="ad-actions">
+            <button id="ad-cancel" class="ad-btn-cancel">Cancel</button>
+            <button id="ad-confirm" class="btn-danger">Confirm</button>
         </div>
-        <div class="body">
-            <div class="segment" id="segment">
-                <div class="seg-pill"></div>
-                <div class="seg-btn active" id="seg-user" onclick="setRole('user')">👤 User</div>
-                <div class="seg-btn" id="seg-admin" onclick="setRole('admin')">🛠️ Admin</div>
+    </div>
+</div>
+<!-- TOAST HOST -->
+<div id="toast-host"></div>
+
+<!-- STATUS BAR -->
+<div id="status-bar">
+    <div class="status-left">
+        <span class="status-dot" id="machine-dot"></span>
+        <strong>Machine 01</strong>
+        <span id="phase-badge">idle</span>
+    </div>
+    <div class="status-right">
+        <button id="camera-toggle-btn" onclick="toggleCamera()">📷 CAM: ON</button>
+    </div>
+</div>
+
+<!-- FLOATING CAMERA LOGS BUTTON -->
+<button id="fab-camera" onclick="switchView('camera-logs-view')" title="Camera Logs">📸</button>
+<div id="fab-tooltip">Camera Logs</div>
+
+<div id="app-root">
+
+<!-- LOGIN VIEW (outside .app-container for full-page centering) -->
+<div id="login-view" class="view active-view">
+    <div class="login-wrap">
+        <div class="login-card">
+            <h2>Campus-VendIQ</h2>
+            <p class="subtitle">Admin Portal</p>
+            <input type="email" id="email" placeholder="Admin Email">
+            <input type="password" id="password" placeholder="Password">
+            <button id="login-btn">Login</button>
+            <div style="text-align:right;margin-top:10px;">
+                <a href="#" id="forgot-password-link" style="color:var(--primary);font-size:13px;text-decoration:none;">Forgot Password?</a>
             </div>
-
-            <label class="fld">Email</label>
-            <div class="inp"><input type="email" id="email" placeholder="name@graduate.utm.my" autocomplete="username"></div>
-
-            <label class="fld">Password</label>
-            <div class="inp">
-                <input type="password" id="password" placeholder="Your password" autocomplete="current-password" style="padding-right:44px;">
-                <span class="pw-toggle" id="pw-toggle" onclick="togglePw()">👁</span>
-            </div>
-
-            <button class="primary" id="login-btn" onclick="doLogin()">Log In as User</button>
-
-            <div class="row-between">
-                <a class="link" id="signup-link" href="index%20(2).html">New here? Create account</a>
-                <a class="link" id="forgot-link" onclick="doForgot()">Forgot password?</a>
-            </div>
-            <p class="err" id="err"></p>
-            <p class="hint" id="hint">Users buy &amp; top up. Admins manage stock, users &amp; alerts.</p>
+            <p id="auth-error" style="color:var(--danger);font-size:13px;margin-top:12px;"></p>
         </div>
-        <div class="safe"></div>
+    </div>
+</div>
+
+<!-- MAIN APP VIEWS (inside scrollable container) -->
+<div class="app-container with-bar" id="main-container" style="display:none;">
+
+    <!-- HOME DASHBOARD -->
+    <div id="home-view" class="view active-view">
+        <div style="margin-bottom:16px;padding-top:4px;">
+            <h2 style="font-size:22px;color:var(--text);font-weight:800;">Admin Dashboard</h2>
+            <p class="text-muted">Campus-VendIQ · Smart Vending</p>
+            <p id="machine-online-status" style="font-size:12px;font-weight:700;margin-top:4px;color:var(--text-light);">● Checking machine…</p>
+        </div>
+
+        <div class="stat-grid">
+            <div class="stat-card g-green">
+                <div class="stat-label">Total Top-Ups</div>
+                <div class="stat-value">RM <span id="admin-total-earnings">0.00</span></div>
+                <div class="stat-sub">all time</div>
+            </div>
+            <div class="stat-card g-blue">
+                <div class="stat-label">Total Sales</div>
+                <div class="stat-value">RM <span id="admin-total-sales">0.00</span></div>
+                <div class="stat-sub">all time</div>
+            </div>
+            <div class="stat-card" style="background:white;">
+                <div class="stat-label" style="color:var(--text-light);">Registered Users</div>
+                <div class="stat-value" style="color:var(--primary);"><span id="admin-user-count">0</span></div>
+                <div class="stat-sub" style="color:var(--text-light);">total accounts</div>
+            </div>
+            <div class="stat-card" style="background:white;">
+                <div class="stat-label" style="color:var(--text-light);">Open Alerts</div>
+                <div class="stat-value" style="color:var(--danger);"><span id="admin-alert-count">0</span></div>
+                <div class="stat-sub" style="color:var(--text-light);">unresolved</div>
+            </div>
+        </div>
+
+        <details id="sales-analytics-section" class="card" style="padding:0;margin-bottom:14px;overflow:hidden;">
+            <summary style="list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;">
+                <div style="min-width:0;">
+                    <h3 style="font-size:16px;margin:0;color:var(--text);">Sales Analytics</h3>
+                    <p class="text-muted" id="sales-chart-range" style="font-size:12px;margin-top:2px;">Most popular items</p>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                    <span class="badge badge-grey" id="sales-chart-total">0 sold</span>
+                    <span style="font-size:16px;color:var(--text-light);">⌄</span>
+                </div>
+            </summary>
+            <div style="border-top:1px solid var(--border);padding:12px 16px 16px;">
+                <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+                    <button type="button" onclick="resetSalesChart()" class="btn-outline btn-sm">Reset Chart</button>
+                </div>
+                <div style="height:230px;position:relative;">
+                    <canvas id="salesChart"></canvas>
+                    <p id="sales-chart-empty" class="text-muted" style="display:none;text-align:center;padding-top:92px;">No sales data yet.</p>
+                </div>
+            </div>
+        </details>
+
+        <div id="low-stock-alert" class="alert-box" style="display:none;">
+            <h4>⚠️ Stock & Expiry Alerts</h4>
+            <ul id="low-stock-list"></ul>
+        </div>
+
+        <div id="security-debt-alert" class="alert-box danger" style="display:none;">
+            <h4>🚨 Security Warning</h4>
+            <p id="security-debt-msg" style="font-size:13px;margin:0;">
+                There is an unresolved security event.
+                <a href="#" onclick="switchView('snapshots-view')">View Security Alerts</a>
+            </p>
+        </div>
+
+        <div class="quick-actions">
+            <button class="btn-info" onclick="switchView('choose-machine-view')">📦 Inventory</button>
+            <button class="btn-success" onclick="switchView('sessions-view')">👥 Users</button>
+            <button class="btn-secondary" onclick="switchView('transactions-view')">📑 Transactions</button>
+            <button class="btn-warning" onclick="switchView('snapshots-view')">🚨 Security</button>
+            <button class="btn-danger span-2" onclick="switchView('debts-view')">💸 Unpaid Debts (<span id="admin-debt-count">0</span>)</button>
+            <button class="btn-purple span-2" onclick="switchView('review-view')">🔍 Purchase Review</button>
+            <button class="btn-danger span-2" onclick="emergencyReset()">🛑 Emergency Reset Machine</button>
+        </div>
+        <p class="text-muted" style="text-align:center;font-size:11px;margin-bottom:16px;">Clears stuck session, relocks door, silences alarms.</p>
+        <button class="btn-danger" id="logout-btn">Sign Out</button>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    <!-- CHOOSE MACHINE -->
+    <div id="choose-machine-view" class="view">
+        <div class="page-header">
+            <button class="back-btn" onclick="switchView('home-view')">←</button>
+            <h2>Select Machine</h2>
+        </div>
+        <div class="machine-card" onclick="openMachineInventory('Machine 1')">
+            <h3 style="margin:0;color:var(--primary);font-size:17px;">Machine 01</h3>
+            <p style="margin:5px 0 0;font-size:14px;color:var(--text-light);">📍 Faculty of Electrical Engineering</p>
+            <p style="margin:5px 0 0;font-size:12px;color:var(--info);">Tap to view & manage stock</p>
+        </div>
+    </div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCMNKH5ES47w4ywhm-0eykbWNA0ZrU7V-I",
-            authDomain: "idp-vending-machine.firebaseapp.com",
-            databaseURL: "https://idp-vending-machine-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "idp-vending-machine",
-            storageBucket: "idp-vending-machine.firebasestorage.app",
-            messagingSenderId: "736954625793",
-            appId: "1:736954625793:web:d8985578b01ae2c5f6f500"
+    <!-- INVENTORY -->
+    <div id="inventory-view" class="view">
+        <div class="page-header">
+            <button class="back-btn" onclick="switchView('choose-machine-view')">←</button>
+            <h2><span id="admin-inv-title">Machine 01</span></h2>
+            <div class="hdr-actions">
+                <button onclick="adminOpenDoor()" class="btn-warning btn-sm">🔓 Restock</button>
+                <button onclick="openConfigModal()" class="btn-secondary btn-sm">⚙️ Edit</button>
+            </div>
+        </div>
+        <p id="restock-status" style="font-size:13px;color:var(--warning);font-weight:700;display:none;background:#fffbeb;padding:8px 12px;border-radius:8px;margin-bottom:10px;border:1px solid #fde68a;">
+            🔓 Restock mode active — door unlocked, alarms paused. Close the door when done.
+        </p>
+        <div id="inventory-list">Loading...</div>
+    </div>
+
+    <!-- SESSIONS / USERS -->
+    <div id="sessions-view" class="view">
+        <div class="page-header">
+            <button class="back-btn" onclick="switchView('home-view')">←</button>
+            <h2>Registered Users</h2>
+        </div>
+        <div id="sessions-list">Loading...</div>
+    </div>
+
+    <!-- USER HISTORY -->
+    <div id="user-history-view" class="view">
+        <div class="page-header">
+            <button class="back-btn" onclick="switchView('sessions-view')">←</button>
+            <h2 id="user-history-title" style="font-size:16px;">User History</h2>
+        </div>
+        <div id="user-history-list">Loading...</div>
+    </div>
+
+    <!-- TRANSACTIONS -->
+    <div id="transactions-view" class="view">
+        <div class="page-header">
+            <button class="back-btn" onclick="switchView('home-view')">←</button>
+            <h2>Global Transactions</h2>
+        </div>
+        <div id="transactions-bulk-toolbar" class="bulk-bar" style="display:none;">
+            <div class="bulk-bar-top">
+                <div class="bulk-bar-icon">🗂️</div>
+                <div>
+                    <div class="bulk-bar-title">Bulk delete transactions</div>
+                    <div class="bulk-bar-sub">Tick rows, then delete</div>
+                </div>
+                <span id="transactions-selected-count" class="bulk-count">0 selected</span>
+            </div>
+            <div class="bulk-actions">
+                <button type="button" onclick="selectAllTransactions()" class="bbtn bbtn-sel">✓ Select all</button>
+                <button type="button" onclick="clearTransactionSelection()" class="bbtn bbtn-clear">Clear</button>
+                <button type="button" onclick="deleteSelectedTransactions()" class="bbtn bbtn-del">🗑 Delete</button>
+            </div>
+        </div>
+        <div id="transactions-list">Loading...</div>
+    </div>
+
+    <!-- UNPAID DEBTS -->
+    <div id="debts-view" class="view">
+        <div class="page-header">
+            <button class="back-btn" onclick="switchView('home-view')">←</button>
+            <h2>Unpaid Debts</h2>
+        </div>
+        <p class="text-muted" style="font-size:12px;margin-bottom:12px;">Students who took more than their balance and didn't pay within 5 minutes. The photos are the before/after of that purchase — evidence for follow-up.</p>
+        <div id="debts-list">Loading...</div>
+    </div>
+
+    <!-- SECURITY ALERTS -->
+    <div id="snapshots-view" class="view">
+        <div class="page-header">
+            <button class="back-btn" onclick="switchView('home-view')">←</button>
+            <h2>Security Alerts</h2>
+        </div>
+        <div id="security-bulk-toolbar" class="bulk-bar" style="display:none;">
+            <div class="bulk-bar-top">
+                <div class="bulk-bar-icon">🚨</div>
+                <div>
+                    <div class="bulk-bar-title">Bulk delete alerts</div>
+                    <div class="bulk-bar-sub">Tick alerts, then delete</div>
+                </div>
+                <span id="security-selected-count" class="bulk-count">0 selected</span>
+            </div>
+            <div class="bulk-actions">
+                <button type="button" onclick="selectAllSecurityAlerts()" class="bbtn bbtn-sel">✓ Select all</button>
+                <button type="button" onclick="clearSecurityAlertSelection()" class="bbtn bbtn-clear">Clear</button>
+                <button type="button" onclick="deleteSelectedSecurityAlerts()" class="bbtn bbtn-del">🗑 Delete</button>
+            </div>
+        </div>
+        <div id="snapshots-list">Loading...</div>
+    </div>
+
+    <!-- CAMERA LOGS -->
+    <div id="camera-logs-view" class="view">
+        <div class="page-header">
+            <button class="back-btn" onclick="switchView('home-view')">←</button>
+            <h2>Camera Logs</h2>
+            <div class="hdr-actions">
+                <button onclick="cycleCameraStorage()" class="btn-secondary btn-sm" id="cam-storage-btn">💾 Both</button>
+                <button onclick="testCameraCapture()" class="btn-info btn-sm" id="test-cam-btn">📷 Test Capture</button>
+            </div>
+        </div>
+        <!-- Test result panel -->
+        <div id="test-cam-result" style="display:none;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:14px;margin-bottom:14px;">
+            <p style="font-size:13px;font-weight:700;color:var(--info);margin-bottom:8px;" id="test-cam-status">Connecting to camera…</p>
+            <img id="test-cam-img" src="" alt="" style="width:100%;border-radius:6px;display:none;border:1px solid var(--border);">
+            <p id="test-cam-url" style="font-size:11px;color:var(--text-light);margin-top:6px;word-break:break-all;"></p>
+        </div>
+        <div id="camera-bulk-toolbar" class="bulk-bar" style="display:none;">
+            <div class="bulk-bar-top">
+                <div class="bulk-bar-icon">📸</div>
+                <div>
+                    <div class="bulk-bar-title">Bulk delete photos</div>
+                    <div class="bulk-bar-sub">Tick photos, then delete</div>
+                </div>
+                <span id="camera-selected-count" class="bulk-count">0 selected</span>
+            </div>
+            <div class="bulk-actions">
+                <button type="button" onclick="selectAllCameraLogs()" class="bbtn bbtn-sel">✓ Select all</button>
+                <button type="button" onclick="clearCameraLogSelection()" class="bbtn bbtn-clear">Clear</button>
+                <button type="button" onclick="deleteSelectedCameraLogs()" class="bbtn bbtn-del">🗑 Delete</button>
+            </div>
+        </div>
+        <div id="camera-logs-list">Loading...</div>
+    </div>
+
+    <!-- PURCHASE REVIEW -->
+    <div id="review-view" class="view">
+        <div class="page-header">
+            <button class="back-btn" onclick="switchView('home-view')">←</button>
+            <h2>Purchase Review</h2>
+        </div>
+        <p class="text-muted" style="margin-bottom:10px;">Before/after photos. Flagged = weight mismatch or suspicious activity.</p>
+        <div style="display:flex;gap:6px;margin-bottom:14px;">
+            <button id="review-filter-flagged" onclick="setReviewFilter('flagged')" class="btn-danger btn-sm">⚠️ Flagged</button>
+            <button id="review-filter-all" onclick="setReviewFilter('all')" class="btn-secondary btn-sm">Show All</button>
+        </div>
+        <div id="review-bulk-toolbar" class="bulk-bar" style="display:none;">
+            <div class="bulk-bar-top">
+                <div class="bulk-bar-icon">🔍</div>
+                <div>
+                    <div class="bulk-bar-title">Bulk delete reviews</div>
+                    <div class="bulk-bar-sub">Tick reviews, then delete</div>
+                </div>
+                <span id="review-selected-count" class="bulk-count">0 selected</span>
+            </div>
+            <div class="bulk-actions">
+                <button type="button" onclick="selectAllReviewPurchases()" class="bbtn bbtn-sel">✓ Select all</button>
+                <button type="button" onclick="clearReviewPurchaseSelection()" class="bbtn bbtn-clear">Clear</button>
+                <button type="button" onclick="deleteSelectedReviewPurchases()" class="bbtn bbtn-del">🗑 Delete</button>
+            </div>
+        </div>
+        <div id="review-list">Loading...</div>
+    </div>
+
+</div><!-- /main-container -->
+</div><!-- /app-root -->
+
+<!-- CONFIG MODAL -->
+<div id="config-modal" class="modal-overlay">
+    <div class="modal-box">
+        <h3>⚙️ Product Setup & Calibration</h3>
+        <p style="font-size:12px;color:var(--text-light);margin:6px 0 12px;">
+            1) Set name/price/max → Save. &nbsp;2) Empty tray → Tare. &nbsp;3) Place items → Calibrate. &nbsp;4) Calc Stock.
+        </p>
+        <p id="cmd-status"></p>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:12px;border-radius:8px;margin-bottom:14px;text-align:left;">
+            <h4 style="font-size:14px;color:var(--success);margin-bottom:8px;">📍 Machine Location Settings</h4>
+            <input type="text" id="config-loc-name" placeholder="Location name (e.g. Faculty of Electrical Engineering)" style="margin-bottom:8px;padding:8px;font-size:13px;">
+            <div style="display:flex;gap:8px;">
+                <input type="number" id="config-lat" placeholder="Latitude" step="0.000001" style="margin-bottom:0;padding:8px;font-size:13px;">
+                <input type="number" id="config-lng" placeholder="Longitude" step="0.000001" style="margin-bottom:0;padding:8px;font-size:13px;">
+            </div>
+            <p style="font-size:11px;color:var(--text-light);margin-top:6px;">Right-click Google Maps and copy the latitude/longitude.</p>
+        </div>
+        <div id="dynamic-items-container" style="max-height:340px;overflow-y:auto;margin-bottom:12px;"></div>
+        <button class="btn-success" onclick="saveMachineConfig()">💾 Save Product Data</button>
+        <button class="btn-danger" onclick="document.getElementById('config-modal').style.display='none'">Close</button>
+    </div>
+</div>
+
+<!-- ADJUST BALANCE MODAL -->
+<div id="adjust-balance-modal" class="modal-overlay">
+    <div class="modal-box">
+        <h3>💰 Adjust User Balance</h3>
+        <p id="adjust-user-email" class="text-muted" style="margin:6px 0 4px;"></p>
+        <p style="margin-bottom:14px;">Current Balance: <strong>RM <span id="adjust-current-bal">0.00</span></strong></p>
+        <input type="number" id="adjust-amount" placeholder="Amount (e.g. 5.00)" step="0.01" min="0.01">
+        <div style="display:flex;gap:8px;margin-top:4px;">
+            <button class="btn-success" style="flex:1;margin:0;" onclick="applyBalanceAdjust(1)">+ Add</button>
+            <button class="btn-danger" style="flex:1;margin:0;" onclick="applyBalanceAdjust(-1)">− Deduct</button>
+        </div>
+        <button class="btn-secondary" style="margin-top:8px;" onclick="document.getElementById('adjust-balance-modal').style.display='none'">Cancel</button>
+        <p id="adjust-msg" style="font-size:13px;margin-top:8px;"></p>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, setPersistence, browserLocalPersistence, indexedDBLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getDatabase, ref, onValue, set, get, push, update, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCMNKH5ES47w4ywhm-0eykbWNA0ZrU7V-I",
+        authDomain: "idp-vending-machine.firebaseapp.com",
+        databaseURL: "https://idp-vending-machine-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "idp-vending-machine",
+        storageBucket: "idp-vending-machine.firebasestorage.app",
+        messagingSenderId: "736954625793",
+        appId: "1:736954625793:web:d8985578b01ae2c5f6f500"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    setPersistence(auth, indexedDBLocalPersistence)
+        .catch(() => setPersistence(auth, browserLocalPersistence))
+        .catch(() => {});
+
+    const ADMIN_EMAIL = "campusvendiq@gmail.com";
+    const ADMIN_EMAILS = [ADMIN_EMAIL];
+    const EMAILJS_PUBLIC_KEY = "e1HTC-jLa_BeyPtr";
+    const EMAILJS_SERVICE_ID = "service_eda27xv";
+    const EMAILJS_TEMPLATE_ID = "template_hzm9nhq";
+    const EMAILJS_ALERT_RECIPIENTS = [ADMIN_EMAIL];
+    try {
+        if (window.emailjs && EMAILJS_PUBLIC_KEY) window.emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+    } catch (e) { console.warn('EmailJS init failed', e); }
+
+    // ---------- NATIVE-FEEL DIALOG + TOAST (replace browser confirm/alert) ----------
+    // Promise-based so call sites stay clean:  if (!await appConfirm({...})) return;
+    window.appConfirm = function (opts) {
+        return new Promise(resolve => {
+            const o = Object.assign({ icon: '❓', title: 'Are you sure?', message: '', confirmText: 'Confirm', danger: true }, opts);
+            const ov = document.getElementById('app-dialog-overlay');
+            document.getElementById('ad-icon').textContent = o.icon;
+            document.getElementById('ad-title').textContent = o.title;
+            document.getElementById('ad-msg').textContent = o.message;
+            const cbtn = document.getElementById('ad-confirm');
+            cbtn.textContent = o.confirmText;
+            cbtn.className = o.danger ? 'btn-danger' : 'btn-success';
+            const done = (v) => { ov.classList.remove('show'); cbtn.onclick = null; resolve(v); };
+            cbtn.onclick = () => done(true);
+            document.getElementById('ad-cancel').onclick = () => done(false);
+            ov.onclick = (e) => { if (e.target === ov) done(false); };
+            ov.classList.add('show');
+        });
+    };
+    window.appToast = function (msg, type = 'info', ms = 2600) {
+        const host = document.getElementById('toast-host');
+        if (!host) return;
+        const el = document.createElement('div');
+        el.className = 'toast ' + type; el.textContent = msg;
+        host.appendChild(el);
+        requestAnimationFrame(() => el.classList.add('show'));
+        setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 260); }, ms);
+    };
+
+    window.dynamicConfig = {};
+    window.adminCurrentMachine = "Machine 1";
+    const mPath = () => `vendingMachine/machines/${window.adminCurrentMachine}`;
+    const SLOT_KEYS = ["s1", "s2", "s3"];
+    let adminInventoryUnsub = null;
+    let adminInfoUnsub = null;
+    let cameraEnabled = true;
+    window.adjustTargetUid = null;
+    window.usersData = {};
+    window.machineInfoConfig = {};
+    window.stepperState = {};
+    window.reviewFilter = 'flagged';
+    window.reviewData = [];
+    let salesChart = null;
+    window.salesChartResetAt = 0;
+    window.selectedTransactionRecords = new Map();
+    window.selectedCameraLogs = new Map();
+    window.selectedSecurityAlerts = new Map();
+    window.selectedReviewPurchases = new Map();
+    window.latestTransactionRecords = [];
+    window.latestCameraLogRecords = [];
+    window.latestSecurityAlertRecords = [];
+    window.latestReviewPurchaseRecords = [];
+
+    // ---------- CAMERA TOGGLE ----------
+    window.toggleCamera = function () {
+        cameraEnabled = !cameraEnabled;
+        set(ref(db, `${mPath()}/control/camera_enabled`), cameraEnabled ? 1 : 0);
+        updateCameraBtn();
+    };
+
+    function updateCameraBtn() {
+        const btn = document.getElementById('camera-toggle-btn');
+        if (!btn) return;
+        btn.textContent = cameraEnabled ? '📷 CAM: ON' : '🚫 CAM: OFF';
+        btn.className = cameraEnabled ? '' : 'cam-off';
+    }
+
+    // ---------- CAMERA STORAGE TOGGLE (both / imgbb / sd) ----------
+    let camStorage = 'both';
+    window.cycleCameraStorage = function () {
+        camStorage = camStorage === 'both' ? 'imgbb' : camStorage === 'imgbb' ? 'sd' : 'both';
+        set(ref(db, `${mPath()}/control/camera_storage`), camStorage);
+        updateCamStorageBtn();
+    };
+    function updateCamStorageBtn() {
+        const btn = document.getElementById('cam-storage-btn');
+        if (!btn) return;
+        const label = camStorage === 'both' ? 'Both' : camStorage === 'imgbb' ? 'ImgBB' : 'SD card';
+        btn.textContent = '💾 ' + label;
+        btn.title = camStorage === 'both' ? 'Saving to SD card + ImgBB (slowest, most reliable)'
+                  : camStorage === 'imgbb' ? 'ImgBB only — viewable anywhere, ~1-3s upload'
+                  : 'SD card only — fastest, but photo links work on the local network only';
+    }
+
+    // ---------- VIEW SWITCHING ----------
+    window.switchView = function (viewId) {
+        // All views including login live in different containers
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
+        const target = document.getElementById(viewId);
+        if (target) target.classList.add('active-view');
+
+        const isLogin = viewId === 'login-view';
+        const bar = document.getElementById('status-bar');
+        const fab = document.getElementById('fab-camera');
+        const container = document.getElementById('main-container');
+        const loginView = document.getElementById('login-view');
+
+        if (isLogin) {
+            if (bar) bar.style.display = 'none';
+            if (fab) fab.style.display = 'none';
+            if (container) container.style.display = 'none';
+            if (loginView) loginView.style.display = 'block';
+        } else {
+            if (bar) bar.style.display = 'flex';
+            if (fab) { fab.style.display = 'flex'; }
+            if (container) container.style.display = 'block';
+            if (loginView) loginView.style.display = 'none';
+        }
+    };
+
+    // FAB tooltip on hover
+    const fab = document.getElementById('fab-camera');
+    const tip = document.getElementById('fab-tooltip');
+    if (fab && tip) {
+        fab.addEventListener('mouseenter', () => { tip.style.display = 'block'; });
+        fab.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+    }
+
+    function isExpiredDate(dateStr) {
+        if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        return dateStr < today;
+    }
+
+    function alertStorageKey(key) {
+        return 'utm-smart-vending-alert:' + key;
+    }
+
+    function sendAdminEmail(message, machine = 'Machine 01') {
+        if (!window.emailjs || !EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID) {
+            console.warn('EmailJS is not ready; alert not sent:', message);
+            return;
+        }
+        EMAILJS_ALERT_RECIPIENTS.forEach(adminEmail => {
+            window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                admin_email: adminEmail,
+                to_email: adminEmail,
+                message,
+                machine,
+                time: new Date().toLocaleString('en-MY')
+            }).catch(err => console.warn('EmailJS send failed', err));
+        });
+    }
+
+    function sendAdminAlertOnce(key, message, machine = 'Machine 01') {
+        const storageKey = alertStorageKey(key);
+        try {
+            if (localStorage.getItem(storageKey)) return;
+            localStorage.setItem(storageKey, String(Date.now()));
+        } catch (e) {}
+        sendAdminEmail(message, machine);
+    }
+
+    function clearAdminAlertOnce(key) {
+        try { localStorage.removeItem(alertStorageKey(key)); } catch (e) {}
+    }
+
+    function addSoldItems(counts, description) {
+        if (!description || /^no items taken$/i.test(description)) return;
+        description.split(',').forEach(part => {
+            const text = part.trim();
+            if (!text) return;
+            const m = text.match(/^(\d+)\s*x\s+(.+)$/i);
+            const qty = m ? parseInt(m[1]) : 1;
+            const name = (m ? m[2] : text).trim();
+            if (!name) return;
+            counts[name] = (counts[name] || 0) + (isNaN(qty) ? 1 : qty);
+        });
+    }
+
+    function collectSalesByItem(usersData) {
+        const counts = {};
+        Object.values(usersData || {}).forEach(u => {
+            if (!u || !u.history) return;
+            Object.values(u.history).forEach(t => {
+                const type = t.type || 'purchase';
+                if (type === 'topup' || type === 'transfer_in' || type === 'transfer_out') return;
+                if (window.salesChartResetAt && (t.timestamp || 0) < window.salesChartResetAt) return;
+                addSoldItems(counts, t.item || 'Unknown Item');
+            });
+        });
+        return counts;
+    }
+
+    function refreshSalesChart() {
+        renderSalesChart(collectSalesByItem(window.usersData));
+    }
+
+    function updateSalesChartRangeLabel() {
+        const el = document.getElementById('sales-chart-range');
+        if (!el) return;
+        el.textContent = window.salesChartResetAt
+            ? 'Most popular items since ' + new Date(window.salesChartResetAt).toLocaleString('en-MY')
+            : 'Most popular items';
+    }
+
+    // Draws the unit count at the end of each horizontal bar (no extra plugin needed).
+    const barValueLabels = {
+        id: 'barValueLabels',
+        afterDatasetsDraw(chart) {
+            const { ctx } = chart;
+            const meta = chart.getDatasetMeta(0);
+            if (!meta || !meta.data) return;
+            ctx.save();
+            ctx.font = '700 12px Segoe UI, system-ui, sans-serif';
+            ctx.fillStyle = '#475569';
+            ctx.textBaseline = 'middle';
+            meta.data.forEach((bar, i) => {
+                const v = chart.data.datasets[0].data[i];
+                if (v == null) return;
+                ctx.fillText(String(v), bar.x + 8, bar.y);
+            });
+            ctx.restore();
+        }
+    };
+
+    function makeBarGradient(ctx, area, from, to) {
+        if (!area) return from;
+        const g = ctx.createLinearGradient(area.left, 0, area.right, 0);
+        g.addColorStop(0, from); g.addColorStop(1, to);
+        return g;
+    }
+
+    function renderSalesChart(counts) {
+        const canvas = document.getElementById('salesChart');
+        const empty = document.getElementById('sales-chart-empty');
+        const totalEl = document.getElementById('sales-chart-total');
+        if (!canvas) return;
+        updateSalesChartRangeLabel();
+        const entries = Object.entries(counts || {}).sort((a, b) => b[1] - a[1]).slice(0, 6);
+        const total = entries.reduce((sum, item) => sum + item[1], 0);
+        if (totalEl) totalEl.textContent = `${total} sold`;
+        if (entries.length === 0 || !window.Chart) {
+            if (salesChart) { salesChart.destroy(); salesChart = null; }
+            canvas.style.display = 'none';
+            if (empty) {
+                empty.style.display = 'block';
+                empty.textContent = window.Chart ? 'No sales data yet.' : 'Chart library is still loading.';
+            }
+            return;
+        }
+        canvas.style.display = 'block';
+        if (empty) empty.style.display = 'none';
+
+        // Gradient palette (per bar, by rank).
+        const palette = [['#4f7bf0','#3850c8'], ['#22b3a0','#0e8f7e'], ['#f0a93b','#e07d18'],
+                         ['#9b6bf0','#6f42c1'], ['#ef6a7a','#dc2626'], ['#3fb6e0','#0e7ea6']];
+        const data = {
+            labels: entries.map(([name]) => name),
+            datasets: [{
+                label: 'Units Sold',
+                data: entries.map(([, qty]) => qty),
+                backgroundColor: (c) => {
+                    const i = c.dataIndex % palette.length;
+                    const [a, b] = palette[i];
+                    return makeBarGradient(c.chart.ctx, c.chart.chartArea, a, b);
+                },
+                borderRadius: 8,
+                borderSkipped: false,
+                maxBarThickness: 26
+            }]
         };
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
-        const ADMIN_EMAILS = [
-            "teoyunje@graduate.utm.my",
-            "wonghi@graduate.utm.my",
-            "justinliewtze@graduate.utm.my",
-            "yubin@graduate.utm.my"
-        ];
-        const USER_APP  = "index%20(2).html";
-        const ADMIN_APP = "admin%20(2).html";
-
-        let role = 'user';
-
-        window.setRole = function (r) {
-            role = r;
-            document.getElementById('segment').className = 'segment' + (r === 'admin' ? ' admin' : '');
-            document.getElementById('seg-user').classList.toggle('active', r === 'user');
-            document.getElementById('seg-admin').classList.toggle('active', r === 'admin');
-            document.getElementById('login-btn').textContent = r === 'admin' ? 'Log In as Admin' : 'Log In as User';
-            document.getElementById('signup-link').style.visibility = r === 'admin' ? 'hidden' : 'visible';
-            document.getElementById('hint').textContent = r === 'admin'
-                ? 'Admin access is limited to registered staff accounts.'
-                : 'Users buy & top up. Admins manage stock, users & alerts.';
-            document.getElementById('err').textContent = '';
-        };
-
-        window.togglePw = function () {
-            const i = document.getElementById('password'), t = document.getElementById('pw-toggle');
-            const show = i.type === 'password'; i.type = show ? 'text' : 'password';
-            t.textContent = show ? '🙈' : '👁';
-        };
-
-        const errEl = document.getElementById('err');
-        const setErr = (m, ok = false) => { errEl.textContent = m; errEl.className = 'err' + (ok ? ' ok' : ''); };
-
-        window.doLogin = async function () {
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-            const btn = document.getElementById('login-btn');
-            setErr('');
-            if (!email || !password) { setErr('Please enter your email and password.'); return; }
-            if (role === 'admin' && !ADMIN_EMAILS.includes(email)) { setErr('This email is not an admin account.'); return; }
-            btn.disabled = true; const label = btn.textContent; btn.innerHTML = '<span class="spin"></span>';
-            try {
-                const cred = await signInWithEmailAndPassword(auth, email, password);
-                if (role === 'admin') {
-                    if (!ADMIN_EMAILS.includes(cred.user.email)) {
-                        await signOut(auth); setErr('Access denied — not an admin account.');
-                        btn.disabled = false; btn.textContent = label; return;
-                    }
-                    setErr('Welcome, admin! Opening dashboard…', true);
-                    location.href = ADMIN_APP;
-                } else {
-                    if (!cred.user.emailVerified) {
-                        await signOut(auth); setErr('Please verify your UTM email first (check your inbox).');
-                        btn.disabled = false; btn.textContent = label; return;
-                    }
-                    setErr('Welcome! Opening your wallet…', true);
-                    location.href = USER_APP;
+        const options = {
+            indexAxis: 'y',                 // horizontal bars — item names read cleanly
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: { padding: { right: 26 } },
+            animation: { duration: 600, easing: 'easeOutQuart' },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1e293b', padding: 10, cornerRadius: 8, displayColors: false,
+                    titleFont: { weight: '700' },
+                    callbacks: { label: (c) => ` ${c.parsed.x} sold` }
                 }
-            } catch (e) {
-                setErr('Invalid email or password.');
-                btn.disabled = false; btn.textContent = label;
+            },
+            datasets: { bar: { categoryPercentage: 0.78, barPercentage: 0.86 } },
+            scales: {
+                x: { beginAtZero: true, ticks: { precision: 0, color: '#94a3b8' },
+                     grid: { color: '#eef2f7', drawTicks: false }, border: { display: false } },
+                y: { ticks: { color: '#334155', font: { weight: '600' }, crossAlign: 'far' },
+                     grid: { display: false }, border: { display: false } }
             }
         };
+        if (salesChart) {
+            salesChart.data = data;
+            salesChart.options = options;
+            salesChart.update();
+        } else {
+            salesChart = new window.Chart(canvas, { type: 'bar', data, options, plugins: [barValueLabels] });
+        }
+    }
 
-        window.doForgot = async function () {
-            const email = document.getElementById('email').value.trim();
-            if (!email) { setErr('Enter your email above first, then tap Forgot password.'); return; }
-            try { await sendPasswordResetEmail(auth, email); setErr('Password reset email sent to ' + email, true); }
-            catch (e) { setErr('Could not send reset email. Check the address.'); }
+    window.resetSalesChart = async function () {
+        if (!await appConfirm({
+            icon: '📊',
+            title: 'Reset Sales Chart',
+            message: 'Reset the chart from now? Transaction history and total sales will stay unchanged.',
+            confirmText: 'Reset Chart',
+            danger: false
+        })) return;
+        set(ref(db, 'vendingMachine/analytics/salesChartResetAt'), Date.now())
+            .then(() => appToast('Sales chart reset', 'success'))
+            .catch(e => appToast('Reset failed: ' + e.message, 'error'));
+    };
+
+    // ---------- CONFIG MODAL ----------
+    window.openConfigModal = function () {
+        const locName = document.getElementById('config-loc-name');
+        const lat = document.getElementById('config-lat');
+        const lng = document.getElementById('config-lng');
+        if (locName) locName.value = window.machineInfoConfig.locationName || "";
+        if (lat) lat.value = window.machineInfoConfig.lat || "";
+        if (lng) lng.value = window.machineInfoConfig.lng || "";
+        const c = document.getElementById('dynamic-items-container');
+        c.innerHTML = '';
+        SLOT_KEYS.forEach((key, idx) => {
+            const d = window.dynamicConfig[key] || {};
+            c.insertAdjacentHTML('beforeend', createSlotRowHTML(key, idx + 1, d));
+        });
+        document.getElementById('config-modal').style.display = 'flex';
+    };
+
+    window.createSlotRowHTML = function (key, slotNum, d) {
+        const name = d.name || "";
+        const price = d.price !== undefined ? d.price : 0.00;
+        const max = d.max !== undefined ? d.max : 5;
+        const en = d.en !== undefined ? parseInt(d.en) : 1;
+        const qty = d.qty !== undefined ? d.qty : 0;
+        const expiry = d.expiry || "";
+        const expiryExpired = isExpiredDate(expiry);
+        const expiryColor = expiryExpired ? "var(--danger)" : "#2563eb";
+        const expiryReminder = expiry
+            ? `<div style="font-size:12px;color:${expiryColor};font-weight:700;margin:-2px 0 8px 98px;">${expiryExpired ? "⚠️ Expired — replace this item" : "Expiry set: " + expiry}</div>`
+            : "";
+        const cal = d.cal_status || "not_calibrated";
+        const status = d.status || "empty";
+        const calColor = cal === "calibrated" ? "var(--success)" : "var(--danger)";
+        return `
+            <div class="dynamic-item-row" data-key="${key}" data-slot="${slotNum}" style="margin-bottom:14px;padding:12px;border:1px solid var(--border);border-radius:8px;background:#f8faff;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <label style="font-size:15px;font-weight:700;color:var(--primary);">Slot ${slotNum} (${key})</label>
+                    <label style="font-size:13px;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="slot-en-input" ${en === 1 ? "checked" : ""}> Enabled</label>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                    <label style="font-size:13px;color:var(--text-light);width:90px;flex-shrink:0;">Name</label>
+                    <input type="text" class="slot-name-input" value="${name}" placeholder="Product name" style="flex:1;margin:0;">
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                    <label style="font-size:13px;color:var(--text-light);width:90px;flex-shrink:0;">Price (RM)</label>
+                    <input type="number" class="slot-price-input" value="${price}" step="0.01" min="0" style="flex:1;margin:0;">
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                    <label style="font-size:13px;color:var(--text-light);width:90px;flex-shrink:0;">Max Capacity</label>
+                    <input type="number" class="slot-max-input" value="${max}" step="1" min="1" style="flex:1;margin:0;">
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                    <label style="font-size:13px;color:var(--text-light);width:90px;flex-shrink:0;">Expiry Date</label>
+                    <input type="date" class="slot-expiry-input" value="${expiry}" style="flex:1;margin:0;color:${expiry ? expiryColor : 'var(--text)'};border-color:${expiry ? expiryColor : 'var(--border)'};">
+                </div>
+                ${expiryReminder}
+                <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px;">
+                    <span><strong>Qty:</strong> <span class="slot-qty-readout">${qty}</span></span>
+                    <span style="color:${calColor};font-weight:600;">${cal}</span>
+                    <span style="color:var(--text-light);">${status}</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <button type="button" onclick="adminCmd('tare',${slotNum})" style="background:var(--warning);color:white;border:none;border-radius:6px;padding:8px;cursor:pointer;font-size:12px;font-weight:700;width:100%;margin:0;">↻ Tare</button>
+                    <button type="button" onclick="adminCmd('calibrate',${slotNum})" style="background:var(--info);color:white;border:none;border-radius:6px;padding:8px;cursor:pointer;font-size:12px;font-weight:700;width:100%;margin:0;">① Calibrate</button>
+                    <button type="button" onclick="adminCmd('stock_check',${slotNum})" style="background:#6f42c1;color:white;border:none;border-radius:6px;padding:8px;cursor:pointer;font-size:12px;font-weight:700;width:100%;margin:0;">∑ Calc Stock</button>
+                    <button type="button" onclick="resetSlotProduct('${key}',${slotNum})" style="background:var(--danger);color:white;border:none;border-radius:6px;padding:8px;cursor:pointer;font-size:12px;font-weight:700;width:100%;margin:0;">⟲ Reset Cal</button>
+                </div>
+            </div>`;
+    };
+
+    window.adminCmd = function (cmd, slotNum) {
+        const base = mPath();
+        let calCount = 1;
+        if (cmd === 'calibrate') {
+            const ans = prompt("How many items are on the tray RIGHT NOW?\n(More items = more accurate. e.g. put 5 and type 5)", "1");
+            if (ans === null) return;
+            calCount = parseInt(ans);
+            if (isNaN(calCount) || calCount < 1) { appToast("Enter a number 1 or more.", 'error'); return; }
+        }
+        setCmdStatus(`Sending ${cmd}… keep the tray still.`);
+        Promise.all([
+            set(ref(db, `${base}/admin/slot`), slotNum),
+            set(ref(db, `${base}/admin/cal_count`), calCount),
+            set(ref(db, `${base}/admin/done`), 0),
+            set(ref(db, `${base}/admin/last_result`), ""),
+            set(ref(db, `${base}/admin/${cmd}`), 1)
+        ]).then(() => {
+            const doneRef = ref(db, `${base}/admin/done`);
+            const unsub = onValue(doneRef, (snap) => {
+                if (snap.val() === 1) {
+                    unsub();
+                    get(ref(db, `${base}/admin/last_result`)).then(r => {
+                        setCmdStatus("✅ " + (r.val() || "Done"), true);
+                    });
+                }
+            });
+            setTimeout(() => { unsub(); }, 15000);
+        }).catch(e => setCmdStatus("Failed: " + e.message));
+    };
+
+    function setCmdStatus(msg, success) {
+        const el = document.getElementById('cmd-status');
+        if (!el) return;
+        el.style.display = 'block';
+        el.style.color = success ? 'var(--success)' : 'var(--primary)';
+        el.innerText = msg;
+    }
+
+    window.resetSlotProduct = async function (key, slotNum) {
+        if (!await appConfirm({ icon: '⚖️', title: 'Reset Calibration', message: `Reset calibration for Slot ${slotNum}? The old unit weight will be cleared.`, confirmText: 'Reset' })) return;
+        update(ref(db, `${mPath()}/inventory/${key}`), {
+            qty: 0, unit_raw: 0, unit_g: 0,
+            cal_status: "not_calibrated", status: "need_calibration"
+        }).then(() => appToast(`Slot ${slotNum} reset — re-tare and recalibrate`, 'success', 3000));
+    };
+
+    window.saveMachineConfig = function () {
+        const locName = document.getElementById('config-loc-name').value.trim();
+        const latRaw = parseFloat(document.getElementById('config-lat').value);
+        const lngRaw = parseFloat(document.getElementById('config-lng').value);
+        const infoUpdates = {
+            locationName: locName,
+            lat: isNaN(latRaw) ? null : latRaw,
+            lng: isNaN(lngRaw) ? null : lngRaw
         };
+        const rows = document.querySelectorAll('.dynamic-item-row');
+        const updates = {};
+        rows.forEach(row => {
+            const key = row.getAttribute('data-key');
+            const name = row.querySelector('.slot-name-input').value.trim();
+            const price = parseFloat(row.querySelector('.slot-price-input').value) || 0;
+            const max = parseInt(row.querySelector('.slot-max-input').value) || 5;
+            const en = row.querySelector('.slot-en-input').checked ? 1 : 0;
+            const expiry = row.querySelector('.slot-expiry-input').value;
+            updates[`${key}/name`] = name;
+            updates[`${key}/price`] = price;
+            updates[`${key}/max`] = max;
+            updates[`${key}/en`] = en;
+            updates[`${key}/expiry`] = expiry || null;
+            const d = window.dynamicConfig[key] || {};
+            if (d.qty === undefined) updates[`${key}/qty`] = 0;
+            if (d.unit_raw === undefined) updates[`${key}/unit_raw`] = 0;
+            if (d.tare === undefined) updates[`${key}/tare`] = 0;
+            if (d.noise === undefined) updates[`${key}/noise`] = 0;
+            if (d.cal_status === undefined) updates[`${key}/cal_status`] = "not_calibrated";
+            if (d.status === undefined) updates[`${key}/status`] = "empty";
+        });
+        Promise.all([
+            update(ref(db, `${mPath()}/info`), infoUpdates),
+            update(ref(db, `${mPath()}/inventory`), updates)
+        ])
+            .then(() => { appToast("Product data saved ✅", 'success'); document.getElementById('config-modal').style.display = 'none'; })
+            .catch(err => appToast("Failed to save: " + err.message, 'error'));
+    };
 
-        document.getElementById('password').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-        document.getElementById('email').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('password').focus(); });
-    </script>
+    window.openMachineInventory = function (machineId) {
+        window.adminCurrentMachine = machineId;
+        document.getElementById('admin-inv-title').innerText = machineId;
+        attachAdminMachineListeners();
+        switchView('inventory-view');
+    };
+
+    // ---------- ADJUST BALANCE ----------
+    window.openAdjustBalance = function (uid) {
+        const u = window.usersData[uid];
+        if (!u) return;
+        window.adjustTargetUid = uid;
+        document.getElementById('adjust-user-email').innerText = u.email || uid;
+        document.getElementById('adjust-current-bal').innerText = parseFloat(u.balance || 0).toFixed(2);
+        document.getElementById('adjust-amount').value = '';
+        document.getElementById('adjust-msg').innerText = '';
+        document.getElementById('adjust-balance-modal').style.display = 'flex';
+    };
+
+    window.applyBalanceAdjust = function (sign) {
+        const uid = window.adjustTargetUid;
+        if (!uid) return;
+        const amt = parseFloat(document.getElementById('adjust-amount').value);
+        const msg = document.getElementById('adjust-msg');
+        if (isNaN(amt) || amt <= 0) { msg.style.color = 'var(--danger)'; msg.innerText = 'Enter a valid amount.'; return; }
+        const u = window.usersData[uid];
+        const cur = parseFloat(u?.balance || 0);
+        const newBal = Math.round((cur + sign * amt) * 100) / 100;
+        set(ref(db, `users/${uid}/balance`), newBal).then(() => {
+            if (newBal >= 0) set(ref(db, `users/${uid}/debt`), null).catch(() => {}); // clear debt once settled
+            document.getElementById('adjust-current-bal').innerText = newBal.toFixed(2);
+            msg.style.color = 'var(--success)';
+            msg.innerText = `✅ Balance updated to RM ${newBal.toFixed(2)}`;
+        }).catch(e => { msg.style.color = 'var(--danger)'; msg.innerText = 'Failed: ' + e.message; });
+    };
+
+    // Mark a student's debt settled in cash: zero the balance + clear the record.
+    window.markDebtPaid = async function (uid) {
+        const u = window.usersData[uid];
+        if (!u) return;
+        const owe = Math.abs(parseFloat(u.balance || 0)).toFixed(2);
+        if (!await appConfirm({ icon: '💵', title: 'Mark Debt Paid', message: `Confirm you collected RM ${owe} in cash from this student?\n\nThis sets their balance to RM 0.00 and clears the debt record.`, confirmText: 'Confirm Paid', danger: false })) return;
+        Promise.all([
+            set(ref(db, `users/${uid}/balance`), 0),
+            set(ref(db, `users/${uid}/debt`), null)
+        ]).then(() => appToast('Debt cleared ✅', 'success')).catch(e => appToast('Failed: ' + e.message, 'error'));
+    };
+
+    // ---------- AUTH ----------
+    document.getElementById('login-btn').addEventListener('click', () => {
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const err = document.getElementById('auth-error');
+        err.innerText = "";
+        if (!ADMIN_EMAILS.includes(email)) { err.innerText = "Access denied. Admin email required."; return; }
+        signInWithEmailAndPassword(auth, email, password).catch(() => { err.innerText = "Invalid email or password."; });
+    });
+
+    document.getElementById('forgot-password-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value.trim();
+        const err = document.getElementById('auth-error');
+        err.innerText = "";
+        if (!email) { err.style.color = "red"; err.innerText = "Enter your admin email first."; return; }
+        if (!ADMIN_EMAILS.includes(email)) { err.style.color = "red"; err.innerText = "Access denied."; return; }
+        sendPasswordResetEmail(auth, email)
+            .then(() => { err.style.color = "green"; err.innerText = "Password reset email sent!"; })
+            .catch((e2) => { err.style.color = "red"; err.innerText = e2.message; });
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+        if (await appConfirm({ icon: '🚪', title: 'Sign Out', message: 'Sign out of the admin dashboard?', confirmText: 'Sign Out' })) signOut(auth);
+    });
+
+    onAuthStateChanged(auth, (user) => {
+        if (user && ADMIN_EMAILS.includes(user.email)) { switchView('home-view'); startAdminListeners(); }
+        else { if (user) signOut(auth); switchView('login-view'); }
+    });
+
+    const formatDate = (ts) => {
+        if (!ts || ts < 1577836800000) return 'unknown';
+        return new Date(ts).toLocaleString('en-MY');
+    };
+
+    function bulkSelectionId(...parts) {
+        return parts.map(p => encodeURIComponent(String(p || ''))).join('|');
+    }
+
+    function pruneBulkSelection(selectionMap, validIds) {
+        Array.from(selectionMap.keys()).forEach(id => {
+            if (!validIds.has(id)) selectionMap.delete(id);
+        });
+    }
+
+    function syncBulkCheckboxes() {
+        document.querySelectorAll('.bulk-transaction-check').forEach(cb => {
+            cb.checked = window.selectedTransactionRecords.has(cb.dataset.selid);
+        });
+        document.querySelectorAll('.bulk-camera-check').forEach(cb => {
+            cb.checked = window.selectedCameraLogs.has(cb.dataset.id);
+        });
+        document.querySelectorAll('.bulk-security-check').forEach(cb => {
+            cb.checked = window.selectedSecurityAlerts.has(cb.dataset.id);
+        });
+        document.querySelectorAll('.bulk-review-check').forEach(cb => {
+            cb.checked = window.selectedReviewPurchases.has(cb.dataset.id);
+        });
+    }
+
+    // Update the count pill text + "filled" state when one or more rows are selected.
+    function setBulkCount(el, n) {
+        if (!el) return;
+        el.textContent = `${n} selected`;
+        el.classList.toggle('has', n > 0);
+    }
+
+    function updateTransactionBulkUI() {
+        const toolbar = document.getElementById('transactions-bulk-toolbar');
+        if (toolbar) toolbar.style.display = window.latestTransactionRecords.length ? 'block' : 'none';
+        setBulkCount(document.getElementById('transactions-selected-count'), window.selectedTransactionRecords.size);
+        syncBulkCheckboxes();
+    }
+
+    function updateCameraBulkUI() {
+        const toolbar = document.getElementById('camera-bulk-toolbar');
+        if (toolbar) toolbar.style.display = window.latestCameraLogRecords.length ? 'block' : 'none';
+        setBulkCount(document.getElementById('camera-selected-count'), window.selectedCameraLogs.size);
+        syncBulkCheckboxes();
+    }
+    function updateSecurityBulkUI() {
+        const toolbar = document.getElementById('security-bulk-toolbar');
+        if (toolbar) toolbar.style.display = window.latestSecurityAlertRecords.length ? 'block' : 'none';
+        setBulkCount(document.getElementById('security-selected-count'), window.selectedSecurityAlerts.size);
+        syncBulkCheckboxes();
+    }
+
+    function updateReviewBulkUI() {
+        const toolbar = document.getElementById('review-bulk-toolbar');
+        if (toolbar) toolbar.style.display = window.latestReviewPurchaseRecords.length ? 'block' : 'none';
+        setBulkCount(document.getElementById('review-selected-count'), window.selectedReviewPurchases.size);
+        syncBulkCheckboxes();
+    }
+
+    window.toggleTransactionSelected = function (checkbox) {
+        const id = checkbox.dataset.selid;
+        const record = { uid: checkbox.dataset.uid, key: checkbox.dataset.key };
+        if (checkbox.checked) window.selectedTransactionRecords.set(id, record);
+        else window.selectedTransactionRecords.delete(id);
+        updateTransactionBulkUI();
+    };
+
+    window.selectAllTransactions = function () {
+        window.latestTransactionRecords.forEach(t => {
+            window.selectedTransactionRecords.set(t.selId, { uid: t.uid, key: t.key });
+        });
+        updateTransactionBulkUI();
+    };
+
+    window.clearTransactionSelection = function () {
+        window.selectedTransactionRecords.clear();
+        updateTransactionBulkUI();
+    };
+
+    window.deleteSelectedTransactions = async function () {
+        const records = Array.from(window.selectedTransactionRecords.values());
+        if (!records.length) { appToast('Select at least one transaction first.', 'info'); return; }
+        if (!await appConfirm({ icon: 'Delete', title: 'Delete Selected Transactions', message: `Delete ${records.length} selected transaction record(s)?\n\nThis does NOT change user balances.`, confirmText: 'Delete Selected' })) return;
+        Promise.all(records.map(t => remove(ref(db, `users/${t.uid}/history/${t.key}`))))
+            .then(() => { window.selectedTransactionRecords.clear(); updateTransactionBulkUI(); appToast('Selected transactions deleted', 'success'); })
+            .catch(e => appToast('Bulk delete failed: ' + e.message, 'error'));
+    };
+
+    window.toggleCameraLogSelected = function (checkbox) {
+        const id = checkbox.dataset.id;
+        const record = { id, imageUrl: decodeURIComponent(checkbox.dataset.image || '') };
+        if (checkbox.checked) window.selectedCameraLogs.set(id, record);
+        else window.selectedCameraLogs.delete(id);
+        updateCameraBulkUI();
+    };
+
+    window.selectAllCameraLogs = function () {
+        window.latestCameraLogRecords.forEach(l => {
+            window.selectedCameraLogs.set(l.id, { id: l.id, imageUrl: l.imageUrl });
+        });
+        updateCameraBulkUI();
+    };
+
+    window.clearCameraLogSelection = function () {
+        window.selectedCameraLogs.clear();
+        updateCameraBulkUI();
+    };
+
+    function deleteCameraImageFile(imageUrl) {
+        if (!imageUrl || imageUrl.includes('placehold.co')) return;
+        try {
+            const u = new URL(imageUrl);
+            const file = u.pathname.replace(/^\/photo/, '');
+            fetch(`http://${u.host}/delete?file=${encodeURIComponent(file)}`).catch(() => {});
+        } catch (e) {}
+    }
+
+    window.deleteSelectedCameraLogs = async function () {
+        const records = Array.from(window.selectedCameraLogs.values());
+        if (!records.length) { appToast('Select at least one photo first.', 'info'); return; }
+        if (!await appConfirm({ icon: 'Delete', title: 'Delete Selected Photos', message: `Delete ${records.length} selected photo log(s)?`, confirmText: 'Delete Selected' })) return;
+        Promise.all(records.map(l => remove(ref(db, `vendingMachine/cameraLogs/${l.id}`))))
+            .then(() => {
+                records.forEach(l => deleteCameraImageFile(l.imageUrl));
+                window.selectedCameraLogs.clear();
+                updateCameraBulkUI();
+                appToast('Selected photos deleted', 'success');
+            })
+            .catch(e => appToast('Bulk delete failed: ' + e.message, 'error'));
+    };
+    window.toggleSecurityAlertSelected = function (checkbox) {
+        const id = checkbox.dataset.id;
+        if (checkbox.checked) window.selectedSecurityAlerts.set(id, { id });
+        else window.selectedSecurityAlerts.delete(id);
+        updateSecurityBulkUI();
+    };
+
+    window.selectAllSecurityAlerts = function () {
+        window.latestSecurityAlertRecords.forEach(a => {
+            window.selectedSecurityAlerts.set(a.id, { id: a.id });
+        });
+        updateSecurityBulkUI();
+    };
+
+    window.clearSecurityAlertSelection = function () {
+        window.selectedSecurityAlerts.clear();
+        updateSecurityBulkUI();
+    };
+
+    window.deleteSelectedSecurityAlerts = async function () {
+        const records = Array.from(window.selectedSecurityAlerts.values());
+        if (!records.length) { appToast('Select at least one security alert first.', 'info'); return; }
+        if (!await appConfirm({ icon: 'Delete', title: 'Delete Selected Security Alerts', message: `Delete ${records.length} selected security alert(s)?`, confirmText: 'Delete Selected' })) return;
+        Promise.all(records.map(a => remove(ref(db, `vendingMachine/securityAlerts/${a.id}`))))
+            .then(() => { window.selectedSecurityAlerts.clear(); updateSecurityBulkUI(); appToast('Selected security alerts deleted', 'success'); })
+            .catch(e => appToast('Bulk delete failed: ' + e.message, 'error'));
+    };
+
+    window.toggleReviewPurchaseSelected = function (checkbox) {
+        const id = checkbox.dataset.id;
+        if (checkbox.checked) window.selectedReviewPurchases.set(id, { id });
+        else window.selectedReviewPurchases.delete(id);
+        updateReviewBulkUI();
+    };
+
+    window.selectAllReviewPurchases = function () {
+        window.latestReviewPurchaseRecords.forEach(p => {
+            window.selectedReviewPurchases.set(p.id, { id: p.id });
+        });
+        updateReviewBulkUI();
+    };
+
+    window.clearReviewPurchaseSelection = function () {
+        window.selectedReviewPurchases.clear();
+        updateReviewBulkUI();
+    };
+
+    window.deleteSelectedReviewPurchases = async function () {
+        const records = Array.from(window.selectedReviewPurchases.values());
+        if (!records.length) { appToast('Select at least one purchase review first.', 'info'); return; }
+        if (!await appConfirm({ icon: 'Delete', title: 'Delete Selected Purchase Reviews', message: `Delete ${records.length} selected purchase review(s)?`, confirmText: 'Delete Selected' })) return;
+        Promise.all(records.map(p => remove(ref(db, `${mPath()}/purchases/${p.id}`))))
+            .then(() => { window.selectedReviewPurchases.clear(); updateReviewBulkUI(); appToast('Selected purchase reviews deleted', 'success'); })
+            .catch(e => appToast('Bulk delete failed: ' + e.message, 'error'));
+    };
+    // ---------- STEPPER (one-at-a-time carousel) ----------
+    function buildCarousel(containerId, cardsHtml, emptyMsg) {
+        const el = document.getElementById(containerId);
+        if (!el) return;
+        if (!cardsHtml || cardsHtml.length === 0) {
+            window.stepperState[containerId] = { cards: [], index: 0 };
+            el.innerHTML = `<p class="text-muted">${emptyMsg}</p>`;
+            return;
+        }
+        const prev = window.stepperState[containerId];
+        let idx = (prev && prev.index < cardsHtml.length) ? prev.index : 0;
+        window.stepperState[containerId] = { cards: cardsHtml, index: idx };
+        renderStepper(containerId);
+    }
+
+    function renderStepper(containerId) {
+        const el = document.getElementById(containerId);
+        const st = window.stepperState[containerId];
+        if (!el || !st || st.cards.length === 0) return;
+        const n = st.cards.length;
+        st.index = Math.max(0, Math.min(n - 1, st.index));
+        const nav = n > 1 ? `
+            <div class="stepper-nav">
+                <button class="stepper-btn" onclick="stepCard('${containerId}',-1)" ${st.index === 0 ? 'disabled' : ''}>‹ Prev</button>
+                <span class="stepper-count">${st.index + 1} / ${n}</span>
+                <button class="stepper-btn" onclick="stepCard('${containerId}',1)" ${st.index === n - 1 ? 'disabled' : ''}>Next ›</button>
+            </div>` : `<div class="stepper-nav" style="justify-content:center;"><span class="stepper-count">1 of 1</span></div>`;
+        el.innerHTML = `<div>${st.cards[st.index]}</div>${nav}`;
+        syncBulkCheckboxes();
+    }
+
+    window.stepCard = function (containerId, dir) {
+        const st = window.stepperState[containerId];
+        if (!st) return;
+        st.index = Math.max(0, Math.min(st.cards.length - 1, st.index + dir));
+        renderStepper(containerId);
+    };
+
+    window.viewUserHistory = function (uid) {
+        const u = window.usersData[uid];
+        if (!u) return;
+        const displayEmail = u.email || `UID: ${uid.substring(0, 8)}...`;
+        document.getElementById('user-history-title').innerText = displayEmail;
+        let html = '';
+        if (u.history) {
+            // Object.entries keeps the push-key so each row can be deleted individually.
+            let tx = Object.entries(u.history).map(([key, t]) => ({ ...t, _key: key }));
+            tx.sort((a, b) => b.timestamp - a.timestamp);
+            tx.forEach(t => {
+                const isTopup = t.type === "topup";
+                const costText = isTopup ? `+ RM ${parseFloat(t.amount || 0).toFixed(2)}` : `- RM ${parseFloat(t.cost || 0).toFixed(2)}`;
+                const badge = isTopup ? `<span class="badge badge-green">${costText}</span>` : `<span class="badge badge-red">${costText}</span>`;
+                const mi = t.machine ? ` · ${t.machine}` : (!isTopup ? " · Machine 1" : "");
+                const balAfter = parseFloat(t.balanceAfter || 0);
+                const balBefore = t.balanceBefore !== undefined
+                    ? parseFloat(t.balanceBefore)
+                    : (isTopup ? balAfter - parseFloat(t.amount || 0) : balAfter + parseFloat(t.cost || 0));
+                html += `<div class="list-card">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <h4 style="flex:1;">${t.item}</h4>${badge}
+                    </div>
+                    <p>${formatDate(t.timestamp)}${mi}</p>
+                    <p>Balance before: <strong>RM ${balBefore.toFixed(2)}</strong> · Balance after: <strong>RM ${balAfter.toFixed(2)}</strong></p>
+                    <button onclick="deleteUserTransaction('${uid}','${t._key}')" class="btn-danger btn-sm" style="margin-top:8px;">🗑 Delete</button>
+                </div>`;
+            });
+        } else html = '<p class="text-muted">No history for this user.</p>';
+        document.getElementById('user-history-list').innerHTML = html;
+        switchView('user-history-view');
+    };
+
+    // Permanently remove a single transaction record. Note: this does NOT refund
+    // or adjust the user's balance — use 💰 Adjust for that. It only clears the log
+    // entry so a huge history can't slow the app down.
+    window.deleteUserTransaction = async function (uid, key) {
+        if (!await appConfirm({ icon: '🗑️', title: 'Delete Transaction', message: "Delete this transaction record permanently?\n\nThis does NOT change the user's balance — it only removes the log entry." })) return;
+        remove(ref(db, `users/${uid}/history/${key}`)).then(() => {
+            window.selectedTransactionRecords.delete(bulkSelectionId(uid, key));
+            updateTransactionBulkUI();
+            // keep the local cache in sync, then re-render the open history view
+            if (window.usersData?.[uid]?.history) delete window.usersData[uid].history[key];
+            const view = document.getElementById('user-history-view');
+            if (view && view.classList.contains('active-view')) viewUserHistory(uid);
+            appToast('Transaction deleted', 'success');
+        }).catch(e => appToast('Delete failed: ' + e.message, 'error'));
+    };
+
+    // ---------- INVENTORY RENDER ----------
+    function renderInventory() {
+        let html = '', lowHtml = '', hasLow = false;
+        const keys = SLOT_KEYS.filter(k => window.dynamicConfig[k]);
+        if (keys.length === 0) {
+            document.getElementById('inventory-list').innerHTML = "<p class='text-muted'>No inventory yet. Press ⚙️ Edit to set products.</p>";
+            document.getElementById('low-stock-alert').style.display = 'none';
+            return;
+        }
+        keys.forEach((k, i) => {
+            const c = window.dynamicConfig[k];
+            const name = c.name || `Slot ${i + 1}`;
+            const qty = c.qty !== undefined ? parseInt(c.qty) : 0;
+            const max = c.max !== undefined ? parseInt(c.max) : 5;
+            const price = c.price !== undefined ? parseFloat(c.price).toFixed(2) : "0.00";
+            const expiry = c.expiry || "";
+            const expiryExpired = isExpiredDate(expiry);
+            const expiryColor = expiryExpired ? "var(--danger)" : "#2563eb";
+            const expiryLine = expiry
+                ? `<div style="color:${expiryColor};font-size:12px;font-weight:700;margin-top:2px;">${expiryExpired ? "⚠️ Expired: " : "Exp: "}${expiry}</div>`
+                : "";
+            const cal = c.cal_status || "not_calibrated";
+            const enabled = c.en === undefined ? 1 : parseInt(c.en);
+            const isLow = enabled === 1 && c.name && qty <= 2;
+            const needsAttention = isLow || expiryExpired;
+            const pct = max > 0 ? Math.min(100, Math.round(qty / max * 100)) : 0;
+            html += `
+                <div class="inventory-item ${needsAttention ? 'low-stock' : ''}">
+                    <div style="flex:1;min-width:0;">
+                        <strong style="font-size:15px;">${name}</strong>
+                        <div style="color:var(--text-light);font-size:12px;margin-top:2px;">RM ${price} · ${cal} · ${enabled ? "enabled" : "disabled"}</div>
+                        ${expiryLine}
+                        <div class="stock-bar-wrap"><div class="stock-bar ${isLow ? 'low' : ''}" style="width:${pct}%"></div></div>
+                    </div>
+                    <div style="text-align:right;min-width:52px;margin-left:10px;">
+                        <span style="font-size:24px;font-weight:800;color:${isLow ? 'var(--danger)' : 'var(--text)'};">${qty}</span>
+                        <div style="font-size:10px;color:var(--text-light);">/ ${max}</div>
+                    </div>
+                </div>`;
+            if (isLow) {
+                hasLow = true;
+                lowHtml += qty === 0
+                    ? `<li style="color:var(--danger);font-weight:700;"><strong>${name}:</strong> OUT OF STOCK — restock now</li>`
+                    : `<li><strong>${name}:</strong> Only ${qty} left</li>`;
+            }
+            const stockAlertKey = `stock-zero:${window.adminCurrentMachine}:${k}`;
+            if (enabled === 1 && c.name && qty === 0) {
+                sendAdminAlertOnce(stockAlertKey, `Warning: Slot ${i + 1} (${name}) is out of stock in ${window.adminCurrentMachine}!`, window.adminCurrentMachine);
+            } else {
+                clearAdminAlertOnce(stockAlertKey);
+            }
+            if (expiryExpired) {
+                hasLow = true;
+                lowHtml += `<li style="color:var(--danger);font-weight:700;"><strong>${name}:</strong> EXPIRED on ${expiry} — replace now</li>`;
+            }
+        });
+        document.getElementById('inventory-list').innerHTML = html;
+        const box = document.getElementById('low-stock-alert');
+        if (hasLow) { document.getElementById('low-stock-list').innerHTML = lowHtml; box.style.display = 'block'; }
+        else box.style.display = 'none';
+
+        document.querySelectorAll('.dynamic-item-row').forEach(row => {
+            const k = row.getAttribute('data-key');
+            const c = window.dynamicConfig[k];
+            if (c) { const ro = row.querySelector('.slot-qty-readout'); if (ro) ro.innerText = c.qty !== undefined ? c.qty : 0; }
+        });
+    }
+
+    window.adminPhase = 'locked';
+    // Tri-state: 'unknown' (no heartbeat seen — e.g. older firmware), 'online', 'offline'.
+    window.adminState = 'unknown';
+    window.adminLastSeenTs = null;
+    window.serverTimeOffset = 0;
+    function evalAdminOnline() {
+        const now = Date.now() + (window.serverTimeOffset || 0);
+        const ts = window.adminLastSeenTs;
+        if (ts == null) window.adminState = 'unknown';
+        else if (now - ts < 120000) window.adminState = 'online';
+        else window.adminState = 'offline';
+        updateAdminStatusBar();
+    }
+    function updateAdminStatusBar() {
+        const el = document.getElementById('phase-badge');
+        const dot = document.getElementById('machine-dot');
+        const status = document.getElementById('machine-online-status');
+        if (window.adminState === 'offline') {
+            const seen = window.adminLastSeenTs ? formatDate(window.adminLastSeenTs) : 'never';
+            if (el) el.textContent = 'offline';
+            if (dot) { dot.style.background = '#9ca3af'; dot.title = 'Last seen ' + seen; }
+            if (status) { status.style.color = 'var(--danger)'; status.textContent = '🔴 Machine 01 OFFLINE · last seen ' + seen; }
+            return;
+        }
+        const phase = window.adminPhase || 'locked';
+        if (el) el.textContent = phase.replace(/_/g, ' ');
+        if (dot) {
+            const busy = ['preparing','unlocked','user_taking','checkout_processing','checkout_done'].includes(phase);
+            const restock = phase.startsWith('restock');
+            dot.style.background = busy ? '#facc15' : restock ? '#fb923c' : '#4ade80';
+            dot.title = window.adminLastSeenTs ? ('Online · last beat ' + formatDate(window.adminLastSeenTs)) : 'Online';
+        }
+        if (status) {
+            if (window.adminState === 'online') {
+                status.style.color = 'var(--success)';
+                status.textContent = '🟢 Machine 01 online · ' + phase.replace(/_/g, ' ');
+            } else { // 'unknown' — no heartbeat received (older firmware?)
+                status.style.color = 'var(--text-light)';
+                status.textContent = '⚪ Machine 01 · no heartbeat yet (update firmware to enable online status)';
+            }
+        }
+    }
+
+    function startAdminListeners() {
+        window.attachAdminMachineListeners = function () {
+            if (adminInventoryUnsub) adminInventoryUnsub();
+            if (adminInfoUnsub) adminInfoUnsub();
+            window.machineInfoConfig = {};
+            document.getElementById('inventory-list').innerHTML = "<p>Loading machine data...</p>";
+            adminInventoryUnsub = onValue(ref(db, `${mPath()}/inventory`), snap => {
+                const cleaned = {};
+                if (snap.exists()) {
+                    const data = snap.val();
+                    for (const key in data) if (SLOT_KEYS.includes(key) && typeof data[key] === 'object') cleaned[key] = data[key];
+                }
+                window.dynamicConfig = cleaned;
+                renderInventory();
+            });
+            adminInfoUnsub = onValue(ref(db, `${mPath()}/info`), snap => {
+                window.machineInfoConfig = snap.val() || {};
+            });
+        };
+        attachAdminMachineListeners();
+
+        // Live machine phase + online heartbeat → status bar & dashboard
+        onValue(ref(db, `${mPath()}/state/phase`), snap => {
+            window.adminPhase = snap.val() || "locked";
+            const restockEl = document.getElementById('restock-status');
+            if (restockEl) restockEl.style.display = (window.adminPhase === 'restocking' || window.adminPhase === 'restock_open') ? 'block' : 'none';
+            updateAdminStatusBar();
+        });
+        // Server-clock offset, so freshness is judged against SERVER time, not the
+        // admin browser's possibly-wrong clock.
+        if (!window._svOffsetSub) {
+            window._svOffsetSub = true;
+            onValue(ref(db, '.info/serverTimeOffset'), s => { window.serverTimeOffset = s.val() || 0; evalAdminOnline(); });
+        }
+        // Heartbeat: ESP32 writes state/heartbeat (a server timestamp) every ~10s.
+        // Online = that value is younger than 30s of server time. A shut-down ESP32
+        // stops writing, so the value goes stale and we flip offline immediately —
+        // even right on page load (no false "online" grace window).
+        onValue(ref(db, `${mPath()}/state/heartbeat`), snap => {
+            window.adminLastSeenTs = snap.val() || null;
+            evalAdminOnline();
+        });
+        if (!window._adminOfflineWatch) window._adminOfflineWatch = setInterval(evalAdminOnline, 5000);
+
+        // Camera enabled state
+        onValue(ref(db, `${mPath()}/control/camera_enabled`), snap => {
+            const val = snap.val();
+            cameraEnabled = (val === null || val === 1 || val === true);
+            updateCameraBtn();
+        });
+
+        // Camera storage preference
+        onValue(ref(db, `${mPath()}/control/camera_storage`), snap => {
+            const v = snap.val();
+            if (v === 'imgbb' || v === 'sd' || v === 'both') camStorage = v;
+            updateCamStorageBtn();
+        });
+
+        // Sales chart reset point
+        onValue(ref(db, 'vendingMachine/analytics/salesChartResetAt'), snap => {
+            window.salesChartResetAt = snap.val() || 0;
+            updateSalesChartRangeLabel();
+            refreshSalesChart();
+        });
+
+        // Users / transactions
+        onValue(ref(db, "users"), snap => {
+            let txList = [], sessionsHtml = '', totalEarnings = 0, totalSales = 0, userCount = 0, debtorsHtml = '', debtCount = 0, salesByItem = {};
+            if (snap.exists()) {
+                window.usersData = snap.val();
+                userCount = Object.keys(snap.val()).length;
+                Object.keys(snap.val()).forEach(uid => {
+                    const u = snap.val()[uid];
+                    const balance = parseFloat(u.balance || 0);
+                    const balStr = balance.toFixed(2);
+                    const email = u.email || `UID: ${uid.substring(0, 8)}...`;
+                    const balColor = balance < 0 ? 'var(--danger)' : 'var(--success)';
+                    sessionsHtml += `<div class="user-card" onclick="viewUserHistory('${uid}')">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <strong style="font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${email}</strong>
+                            <span style="font-size:16px;font-weight:800;color:${balColor};flex-shrink:0;margin-left:8px;">RM ${balStr}</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+                            <span class="text-muted" style="font-size:12px;">Tap to view history</span>
+                            <button onclick="event.stopPropagation();openAdjustBalance('${uid}')" style="background:var(--primary);color:white;border:none;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px;width:auto;margin:0;font-weight:600;">💰 Adjust</button>
+                        </div>
+                    </div>`;
+
+                    // Unpaid-debt card: any negative balance, once past the 5-min grace.
+                    if (balance < 0) {
+                        const d = u.debt || {};
+                        const inGrace = d.since && !d.reported && (Date.now() - d.since < 300000);
+                        if (!inGrace) {
+                            debtCount++;
+                            const name = u.fullname || email;
+                            const owe = Math.abs(balance).toFixed(2);
+                            const sinceStr = d.since ? formatDate(d.since) : 'unknown';
+                            const beforeImg = d.before_url ? `<img src="${d.before_url}" style="width:100%;border-radius:6px;border:1px solid var(--border);" onerror="this.style.display='none'">` : `<div style="font-size:11px;color:var(--text-light);padding:10px 0;text-align:center;">No before photo</div>`;
+                            const afterImg = d.after_url ? `<img src="${d.after_url}" style="width:100%;border-radius:6px;border:1px solid var(--border);" onerror="this.style.display='none'">` : `<div style="font-size:11px;color:var(--text-light);padding:10px 0;text-align:center;">No after photo</div>`;
+                            debtorsHtml += `<div class="list-card" style="border-left:4px solid var(--danger);">
+                                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                                    <div style="flex:1;min-width:0;">
+                                        <h4 style="color:var(--danger);">${name}</h4>
+                                        <p style="font-size:12px;">${email}</p>
+                                    </div>
+                                    <span class="badge badge-red" style="font-size:14px;flex-shrink:0;">Owes RM ${owe}</span>
+                                </div>
+                                <p style="font-size:13px;margin-top:6px;"><strong>Items:</strong> ${d.items || '—'}</p>
+                                <p style="font-size:12px;color:var(--text-light);">Since ${sinceStr}${d.machine ? ' · ' + d.machine : ''}</p>
+                                <div style="display:flex;gap:8px;margin-top:10px;">
+                                    <div style="flex:1;"><div style="font-size:11px;color:var(--text-light);margin-bottom:3px;font-weight:700;">BEFORE</div>${beforeImg}</div>
+                                    <div style="flex:1;"><div style="font-size:11px;color:var(--text-light);margin-bottom:3px;font-weight:700;">AFTER</div>${afterImg}</div>
+                                </div>
+                                <div style="display:flex;gap:8px;margin-top:12px;">
+                                    <button onclick="markDebtPaid('${uid}')" class="btn-success btn-sm" style="flex:1;">✅ Mark Paid (cash)</button>
+                                    <button onclick="openAdjustBalance('${uid}')" class="btn-secondary btn-sm" style="flex:1;">💰 Adjust</button>
+                                </div>
+                            </div>`;
+                        }
+                    }
+
+                    if (u.history) Object.entries(u.history).forEach(([key, t]) => {
+                        const type = t.type || 'purchase';
+                        if (type === "topup") {
+                            const amount = parseFloat(t.amount || 0);
+                            totalEarnings += amount;
+                            txList.push({ uid, key, email, item: t.item || 'Account Top-Up', machine: t.machine, cost: `+ RM ${amount.toFixed(2)}`, badgeClass: 'badge-green', kind: type, timestamp: t.timestamp });
+                            return;
+                        }
+                        if (type === "transfer_in" || type === "transfer_out") {
+                            const amount = parseFloat(t.amount || 0);
+                            txList.push({ uid, key, email, item: t.item || (type === "transfer_in" ? 'Received Transfer' : 'Sent Transfer'), machine: '', cost: `${type === "transfer_in" ? '+' : '-'} RM ${amount.toFixed(2)}`, badgeClass: type === "transfer_in" ? 'badge-green' : 'badge-grey', kind: type, timestamp: t.timestamp });
+                            return;
+                        }
+                        const saleCost = parseFloat(t.cost || 0);
+                        totalSales += saleCost;
+                        if (!window.salesChartResetAt || (t.timestamp || 0) >= window.salesChartResetAt) addSoldItems(salesByItem, t.item || 'Unknown Item');
+                        txList.push({ uid, key, email, item: t.item || 'Purchase', machine: t.machine, cost: `- RM ${saleCost.toFixed(2)}`, badgeClass: 'badge-red', kind: 'purchase', timestamp: t.timestamp });
+                    });
+                });
+            }
+            document.getElementById('admin-total-earnings').innerText = totalEarnings.toFixed(2);
+            if (document.getElementById('admin-total-sales')) document.getElementById('admin-total-sales').innerText = totalSales.toFixed(2);
+            if (document.getElementById('admin-user-count')) document.getElementById('admin-user-count').innerText = userCount;
+            renderSalesChart(salesByItem);
+            txList.sort((a, b) => b.timestamp - a.timestamp);
+            window.latestTransactionRecords = txList.map(t => ({ uid: t.uid, key: t.key, selId: bulkSelectionId(t.uid, t.key) }));
+            pruneBulkSelection(window.selectedTransactionRecords, new Set(window.latestTransactionRecords.map(t => t.selId)));
+            let txHtml = '';
+            txList.forEach(t => {
+                const badge = `<span class="badge ${t.badgeClass || 'badge-red'}">${t.cost}</span>`;
+                const mi = t.machine ? ` · ${t.machine}` : (t.kind === 'purchase' ? " · Machine 1" : "");
+                const selId = bulkSelectionId(t.uid, t.key);
+                const checked = window.selectedTransactionRecords.has(selId) ? 'checked' : '';
+                txHtml += `<div class="list-card">
+                    <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;font-weight:700;color:var(--primary);">
+                        <input type="checkbox" class="bulk-transaction-check" data-selid="${selId}" data-uid="${t.uid}" data-key="${t.key}" onchange="toggleTransactionSelected(this)" ${checked} style="width:auto;margin:0;">
+                        Select this record
+                    </label>
+                    <div style="display:flex;justify-content:space-between;align-items:center;"><h4>${t.item}</h4>${badge}</div>
+                    <p>${t.email}</p>
+                    <p>${formatDate(t.timestamp)}${mi}</p>
+                    <button onclick="deleteUserTransaction('${t.uid}','${t.key}')" class="btn-danger btn-sm" style="margin-top:8px;">Delete</button>
+                </div>`;
+            });
+            document.getElementById('transactions-list').innerHTML = txHtml || '<p class="text-muted">No purchase history.</p>';
+            updateTransactionBulkUI();
+            document.getElementById('sessions-list').innerHTML = sessionsHtml || '<p class="text-muted">No registered users found.</p>';
+            if (document.getElementById('debts-list')) document.getElementById('debts-list').innerHTML = debtorsHtml || '<p class="text-muted">No unpaid debts. 🎉</p>';
+            if (document.getElementById('admin-debt-count')) document.getElementById('admin-debt-count').innerText = debtCount;
+        });
+
+        // Security alerts
+        onValue(ref(db, "vendingMachine/securityAlerts"), snap => {
+            let cards = [], hasUnresolved = false, unresolvedCount = 0, securityRecords = [];
+            const friendly = (r) => ({
+                'unauthorized_door_open': 'Unauthorized Door Open',
+                'item_moved_between_trays': 'Item Moved to Wrong Tray',
+                'door_open_over_5min': 'Door Left Open > 5 min',
+                'invalid_tray_weight': 'Wrong Item / Weight on Tray',
+                'unpaid_negative_balance': 'Unpaid Negative Balance'
+            }[r] || (r || 'n/a'));
+            if (snap.exists()) {
+                let alerts = []; snap.forEach(c => { alerts.push({ id: c.key, ...c.val() }); });
+                alerts.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                alerts.forEach(a => {
+                    securityRecords.push({ id: a.id });
+                    if (!a.resolved) {
+                        hasUnresolved = true;
+                        unresolvedCount++;
+                        sendAdminAlertOnce(
+                            `security:${a.id}`,
+                            `Security alert: ${friendly(a.reason)}${a.email ? ' for ' + a.email : ''}${a.items ? ' - Items: ' + a.items : ''}${a.amount ? ' - Amount: RM ' + parseFloat(a.amount || 0).toFixed(2) : ''}`,
+                            a.machine || 'Machine 01'
+                        );
+                    }
+                    const checked = window.selectedSecurityAlerts.has(a.id) ? 'checked' : '';
+                    const badge = a.resolved ? `<span class="badge badge-green">Resolved</span>` : `<span class="badge badge-red">Unresolved</span>`;
+                    const photo = a.image_url
+                        ? `<a href="${a.image_url}" target="_blank"><img src="${a.image_url}" style="width:100%;height:160px;object-fit:cover;border-radius:8px;border:1px solid var(--border);margin-bottom:10px;"></a>`
+                        : `<div style="width:100%;height:100px;background:var(--bg);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text-light);font-size:13px;margin-bottom:10px;">No photo captured</div>`;
+                    cards.push(`<div class="list-card ${a.resolved ? '' : 'alert-card'}" style="${a.resolved ? 'opacity:0.7;' : ''}">
+                        <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;font-weight:700;color:var(--primary);">
+                            <input type="checkbox" class="bulk-security-check" data-id="${a.id}" onchange="toggleSecurityAlertSelected(this)" ${checked} style="width:auto;margin:0;">
+                            Select this alert
+                        </label>
+                        ${photo}
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                            <h4 style="color:var(--danger);">${friendly(a.reason)}</h4>${badge}
+                        </div>
+                        <p><strong>User:</strong> ${a.email || 'unknown'}</p>
+                        <p><strong>Items:</strong> ${a.items || '-'}</p>
+                        <p><strong>Amount:</strong> RM ${parseFloat(a.amount || 0).toFixed(2)}</p>
+                        <p style="font-size:12px;">${formatDate(a.timestamp)}</p>
+                        <div style="display:flex;gap:8px;margin-top:10px;">
+                            <button onclick="toggleAlertResolved('${a.id}',${!a.resolved})" style="flex:1;background:${a.resolved ? 'var(--warning)' : 'var(--success)'};color:white;border:none;border-radius:6px;padding:8px;cursor:pointer;font-size:13px;font-weight:600;width:auto;margin:0;">${a.resolved ? 'Reopen' : 'Resolve'}</button>
+                            <button onclick="deleteAlert('${a.id}')" style="flex:1;background:var(--danger);color:white;border:none;border-radius:6px;padding:8px;cursor:pointer;font-size:13px;font-weight:600;width:auto;margin:0;">Delete</button>
+                        </div>
+                    </div>`);
+                });
+            }
+            window.latestSecurityAlertRecords = securityRecords;
+            pruneBulkSelection(window.selectedSecurityAlerts, new Set(securityRecords.map(a => a.id)));
+            if (document.getElementById('admin-alert-count')) document.getElementById('admin-alert-count').innerText = unresolvedCount;
+            const banner = document.getElementById('security-debt-alert');
+            if (banner) banner.style.display = hasUnresolved ? 'block' : 'none';
+            buildCarousel('snapshots-list', cards, 'No security alerts found.');
+            updateSecurityBulkUI();
+        });
+        // Camera logs
+        onValue(ref(db, "vendingMachine/cameraLogs"), snap => {
+            let cards = [], cameraRecords = [];
+            if (snap.exists()) {
+                let logs = []; snap.forEach(c => { logs.push({ id: c.key, ...c.val() }); });
+                logs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                logs.forEach(l => {
+                    const img = l.imageUrl ? l.imageUrl : 'https://placehold.co/300x200?text=No+Image';
+                    const user = l.userEmail || 'Unknown';
+                    const stage = l.stage || '';
+                    const reason = l.reason || '';
+                    const checked = window.selectedCameraLogs.has(l.id) ? 'checked' : '';
+                    cameraRecords.push({ id: l.id, imageUrl: img });
+                    cards.push(`<div class="list-card" style="text-align:center;">
+                        <label style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;font-size:12px;font-weight:700;color:var(--primary);">
+                            <input type="checkbox" class="bulk-camera-check" data-id="${l.id}" data-image="${encodeURIComponent(img)}" onchange="toggleCameraLogSelected(this)" ${checked} style="width:auto;margin:0;">
+                            Select this photo
+                        </label>
+                        <a href="${img}" target="_blank"><img src="${img}" style="width:100%;height:200px;border-radius:8px;object-fit:cover;border:1px solid var(--border);"></a>
+                        <p style="margin:8px 0 0;font-size:14px;font-weight:600;">${stage}${reason ? ' · ' + reason : ''}</p>
+                        <p style="font-size:13px;color:var(--text-light);">${formatDate(l.timestamp)}</p>
+                        <p style="font-size:13px;color:var(--primary);font-weight:600;">${user}</p>
+                        <button onclick="deleteCameraLog('${l.id}','${img}')" style="margin-top:8px;background:var(--danger);color:white;border:none;border-radius:6px;padding:6px 16px;cursor:pointer;font-size:12px;font-weight:700;width:auto;">Delete</button>
+                    </div>`);
+                });
+            }
+            window.latestCameraLogRecords = cameraRecords;
+            pruneBulkSelection(window.selectedCameraLogs, new Set(cameraRecords.map(l => l.id)));
+            buildCarousel('camera-logs-list', cards,
+                "No camera logs yet. Photos appear here after the ESP32-CAM captures them. If blank during use, check the CAM's serial monitor and that state/camera/ip is set.");
+            updateCameraBulkUI();
+        });
+        startReviewListener();
+
+        onValue(ref(db, `${mPath()}/security`), snap => {
+            const s = snap.val() || {};
+            const banner = document.getElementById('security-debt-alert');
+            if (!banner) return;
+            if (parseInt(s.notify_admin) === 1 || parseInt(s.alarm) === 1) {
+                banner.style.display = 'block';
+                const msg = document.getElementById('security-debt-msg');
+                const reason = s.notify_reason || 'Security event';
+                if (msg) msg.innerHTML = `🚨 <strong>${reason}</strong> at the machine. <a href="#" onclick="switchView('snapshots-view')">View Security Alerts</a> then Emergency Reset if needed.`;
+                sendAdminAlertOnce(`machine-security:${reason}`, `Security alert at ${window.adminCurrentMachine}: ${reason}`, window.adminCurrentMachine);
+            }
+        });
+    }
+
+    // ---------- EMERGENCY RESET ----------
+    window.emergencyReset = async function () {
+        if (!await appConfirm({ icon: '🛑', title: 'Emergency Reset', message: 'Reset the machine now? This clears any stuck session, relocks the door, and silences alarms.', confirmText: 'Reset Now' })) return;
+        const base = mPath();
+        Promise.all([
+            set(ref(db, `${base}/control/reset`), 1),
+            set(ref(db, `${base}/control/unlock`), 0),
+            set(ref(db, `${base}/control/admin_unlock`), 0),
+            set(ref(db, `${base}/control/affordable`), 0),
+            set(ref(db, `${base}/security/alarm`), 0),
+            set(ref(db, `${base}/security/notify_admin`), 0),
+            set(ref(db, `${base}/checkout/status`), "idle")
+        ]).then(() => { appToast('Reset sent — machine relocks within ~1s', 'success'); })
+        .catch(e => appToast('Reset failed: ' + e.message, 'error'));
+    };
+
+    // ---------- ADMIN RESTOCK DOOR ----------
+    window.adminOpenDoor = function () {
+        const base = mPath();
+        get(ref(db, `${base}/control/admin_unlock`)).then(snap => {
+            const cur = snap.val();
+            if (cur === 1) {
+                set(ref(db, `${base}/control/admin_unlock`), 0);
+                appToast('Closing restock mode — push the door shut to recount stock', 'info', 3200);
+            } else {
+                set(ref(db, `${base}/control/admin_unlock`), 1);
+                appToast('Door unlocking for restock — alarms paused. Press again when done.', 'info', 3200);
+            }
+        });
+    };
+
+    // ---------- PURCHASE REVIEW ----------
+    window.setReviewFilter = function (f) {
+        window.reviewFilter = f;
+        document.getElementById('review-filter-flagged').style.background = f === 'flagged' ? 'var(--primary-dark, #3730a3)' : 'var(--danger)';
+        document.getElementById('review-filter-all').style.background = f === 'all' ? '#475569' : '#64748b';
+        renderReview();
+    };
+
+    function startReviewListener() {
+        onValue(ref(db, `${mPath()}/purchases`), snap => {
+            window.reviewData = [];
+            if (snap.exists()) snap.forEach(c => { window.reviewData.push({ id: c.key, ...c.val() }); });
+            window.reviewData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            renderReview();
+        });
+    }
+
+    function renderReview() {
+        const div = document.getElementById('review-list');
+        if (!div) return;
+        let list = window.reviewData;
+        if (window.reviewFilter === 'flagged') list = list.filter(p => p.flagged && !p.resolved);
+        window.latestReviewPurchaseRecords = list.map(p => ({ id: p.id }));
+        pruneBulkSelection(window.selectedReviewPurchases, new Set(window.latestReviewPurchaseRecords.map(p => p.id)));
+        const cards = list.map(p => {
+            const u = window.usersData[p.uid] || {};
+            const name = u.fullname || '(no name)';
+            const before = p.before_url || 'https://placehold.co/250x160?text=No+Before';
+            const after = p.after_url || 'https://placehold.co/250x160?text=No+After';
+            const charged = parseFloat(p.total || 0);
+            const balanceAfter = parseFloat(p.balanceAfter || 0);
+            const balanceBefore = p.balanceBefore !== undefined ? parseFloat(p.balanceBefore) : balanceAfter + charged;
+            const flagBadge = p.flagged ? `<span class="badge badge-red">Suspicious</span>` : `<span class="badge badge-green">OK</span>`;
+            const resolvedBadge = p.resolved ? `<span class="badge badge-grey" style="margin-left:4px;">Resolved</span>` : '';
+            const checked = window.selectedReviewPurchases.has(p.id) ? 'checked' : '';
+            let aiText = p.ai_verify && p.ai_verify !== 'pending' ? p.ai_verify : 'not checked';
+            let aiColor = (p.ai_verify && p.ai_verify.toLowerCase().includes('mismatch')) ? 'var(--danger)' : 'var(--text-light)';
+            return `
+                <div class="list-card ${p.flagged && !p.resolved ? 'alert-card' : ''}">
+                    <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;font-weight:700;color:var(--primary);">
+                        <input type="checkbox" class="bulk-review-check" data-id="${p.id}" onchange="toggleReviewPurchaseSelected(this)" ${checked} style="width:auto;margin:0;">
+                        Select this review
+                    </label>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;">
+                        <h4 style="flex:1;min-width:0;">${p.items}</h4>
+                        <div style="flex-shrink:0;">${flagBadge}${resolvedBadge}</div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0;">
+                        <div style="text-align:center;">
+                            <a href="${before}" target="_blank"><img src="${before}" style="width:100%;height:130px;object-fit:cover;border-radius:6px;border:1px solid var(--border);"></a>
+                            <p style="font-size:11px;color:var(--text-light);margin:4px 0 0;">BEFORE</p>
+                        </div>
+                        <div style="text-align:center;">
+                            <a href="${after}" target="_blank"><img src="${after}" style="width:100%;height:130px;object-fit:cover;border-radius:6px;border:1px solid var(--border);"></a>
+                            <p style="font-size:11px;color:var(--text-light);margin:4px 0 0;">AFTER</p>
+                        </div>
+                    </div>
+                    <p><strong>${name}</strong> - ${p.email}</p>
+                    <p>Balance before: <strong>RM ${balanceBefore.toFixed(2)}</strong> - Charged: <strong>RM ${charged.toFixed(2)}</strong> - Balance after: <strong>RM ${balanceAfter.toFixed(2)}</strong></p>
+                    <p style="font-size:12px;color:var(--text-light);">${formatDate(p.timestamp)}</p>
+                    <p style="color:${aiColor};font-size:13px;"><strong>AI check:</strong> ${aiText}</p>
+                    <details class="ai-menu">
+                        <summary class="ai-summary">🤖 AI Check <span class="caret">▾</span></summary>
+                        <div class="ai-menu-pop">
+                            <div class="ai-menu-label">Choose a checker</div>
+                            <div class="ai-opts">
+                                ${AI_CHECKERS.map(c => `<button type="button" class="ai-opt" onclick="runAICheck('${p.id}','${c.id}')">${c.icon} ${c.name}</button>`).join('')}
+                            </div>
+                        </div>
+                    </details>
+                    <div class="ra-row">
+                        <button class="${p.resolved ? 'btn-warning' : 'btn-success'}" onclick="toggleResolved('${p.id}',${!p.resolved})">${p.resolved ? 'Reopen' : 'Resolve'}</button>
+                        <button class="btn-danger" onclick="deletePurchase('${p.id}')">Delete</button>
+                    </div>
+                </div>`;
+        });
+        buildCarousel('review-list', cards, 'No purchases to review.');
+        updateReviewBulkUI();
+    }
+    window.toggleResolved = function (id, resolved) { set(ref(db, `${mPath()}/purchases/${id}/resolved`), resolved); };
+    window.deletePurchase = async function (id) {
+        if (!await appConfirm({ icon: 'Delete', title: 'Delete Purchase', message: 'Delete this purchase record permanently?' })) return;
+        remove(ref(db, `${mPath()}/purchases/${id}`)).then(() => {
+            window.selectedReviewPurchases.delete(id);
+            updateReviewBulkUI();
+            appToast('Purchase review deleted', 'success');
+        }).catch(e => appToast('Delete failed: ' + e.message, 'error'));
+    };
+    window.toggleAlertResolved = function (id, resolved) { set(ref(db, `vendingMachine/securityAlerts/${id}/resolved`), resolved); };
+    window.deleteAlert = async function (id) {
+        if (!await appConfirm({ icon: 'Delete', title: 'Delete Alert', message: 'Delete this security alert permanently?' })) return;
+        remove(ref(db, `vendingMachine/securityAlerts/${id}`)).then(() => {
+            window.selectedSecurityAlerts.delete(id);
+            updateSecurityBulkUI();
+            appToast('Security alert deleted', 'success');
+        }).catch(e => appToast('Delete failed: ' + e.message, 'error'));
+    };
+    window.deleteCameraLog = async function (id, imageUrl) {
+        if (!await appConfirm({ icon: 'Delete', title: 'Delete Photo', message: 'Delete this photo permanently?' })) return;
+        remove(ref(db, `vendingMachine/cameraLogs/${id}`)).then(() => {
+            window.selectedCameraLogs.delete(id);
+            updateCameraBulkUI();
+            deleteCameraImageFile(imageUrl);
+            appToast('Photo deleted', 'success');
+        }).catch(e => appToast('Delete failed: ' + e.message, 'error'));
+    };
+    // ---------- TEST CAMERA CAPTURE ----------
+    window.testCameraCapture = async function () {
+        const btn = document.getElementById('test-cam-btn');
+        const panel = document.getElementById('test-cam-result');
+        const status = document.getElementById('test-cam-status');
+        const img = document.getElementById('test-cam-img');
+        const urlEl = document.getElementById('test-cam-url');
+
+        btn.disabled = true; btn.textContent = '⏳ Capturing…';
+        panel.style.display = 'block';
+        img.style.display = 'none';
+        urlEl.textContent = '';
+        status.style.color = 'var(--info)';
+        status.textContent = 'Reading CAM IP from Firebase…';
+
+        try {
+            // 1. Get the CAM's IP from Firebase
+            const ipSnap = await get(ref(db, `${mPath()}/state/camera/ip`));
+            const camIP = ipSnap.val();
+            if (!camIP) {
+                status.style.color = 'var(--danger)';
+                status.textContent = '❌ No CAM IP found in Firebase. Make sure the ESP32-CAM is powered on and connected to WiFi — it publishes its IP to state/camera/ip on boot.';
+                btn.disabled = false; btn.textContent = '📷 Test Capture';
+                return;
+            }
+
+            status.textContent = `Found CAM at ${camIP} — sending capture request…`;
+
+            // 2. Call the capture endpoint on the CAM — forward the storage choice
+            //    so the test honours the SD/ImgBB/Both toggle (was defaulting to "both").
+            const url = `http://${camIP}/capture?stage=test&reason=admin_test&email=admin&store=${camStorage}`;
+            let data;
+            try {
+                const resp = await fetch(url, { signal: AbortSignal.timeout(15000) });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                data = await resp.json();
+            } catch (fetchErr) {
+                status.style.color = 'var(--danger)';
+                status.textContent = `❌ Could not reach CAM at ${camIP}. Make sure this device is on the same WiFi as the CAM (and CAM on the same network as the main ESP32). Error: ${fetchErr.message}`;
+                btn.disabled = false; btn.textContent = '📷 Test Capture';
+                return;
+            }
+
+            const imageUrl = data.image_url || '';
+            if (!imageUrl) {
+                status.style.color = 'var(--danger)';
+                status.textContent = `❌ CAM replied but returned no image URL. ImgBB upload may have failed and SD card may not be ready. Check CAM serial monitor.`;
+                urlEl.textContent = JSON.stringify(data);
+                btn.disabled = false; btn.textContent = '📷 Test Capture';
+                return;
+            }
+
+            // 3. Show the captured image
+            status.style.color = 'var(--success)';
+            status.textContent = '✅ Capture successful! Writing to Camera Logs…';
+            img.src = imageUrl; img.style.display = 'block';
+            urlEl.textContent = imageUrl;
+
+            // 4. Write to Firebase cameraLogs (same format as ESP32 main does)
+            await push(ref(db, 'vendingMachine/cameraLogs'), {
+                imageUrl: imageUrl,
+                stage: 'test',
+                reason: 'admin_test',
+                userEmail: 'admin (manual test)',
+                timestamp: Date.now()
+            });
+
+            status.textContent = '✅ Done! Photo saved and visible in Camera Logs above.';
+        } catch (e) {
+            status.style.color = 'var(--danger)';
+            status.textContent = '❌ Unexpected error: ' + e.message;
+        }
+
+        btn.disabled = false; btn.textContent = '📷 Test Capture';
+    };
+
+    const AI_FUNCTION_URL = "";   // legacy single endpoint (mapped to "Cloud Function" below)
+    // Multiple AI checkers — wire each one's `url` to its vision endpoint. The foldable
+    // "AI Check" button in Purchase Review lets the admin choose which one to run.
+    const AI_CHECKERS = [
+        { id: 'cloud',  name: 'Cloud Function', icon: '☁️', url: AI_FUNCTION_URL },
+        { id: 'claude', name: 'Claude Vision',  icon: '🧠', url: '' },
+        { id: 'gemini', name: 'Gemini Vision',  icon: '✨', url: '' },
+        { id: 'openai', name: 'OpenAI Vision',  icon: '🤖', url: '' }
+    ];
+    window.runAICheck = function (id, checkerId) {
+        const checker = AI_CHECKERS.find(c => c.id === checkerId) || AI_CHECKERS[0];
+        if (!checker.url) {
+            appConfirm({
+                icon: '🤖', title: checker.name + ' not configured',
+                message: 'Compare the BEFORE and AFTER photos manually.\n\nTo enable "' + checker.name + '", set its url in the AI_CHECKERS list in admin.html.',
+                confirmText: 'Got it', danger: false
+            });
+            return;
+        }
+        const p = window.reviewData.find(x => x.id === id);
+        if (!p) return;
+        set(ref(db, `${mPath()}/purchases/${id}/ai_verify`), `${checker.name}: checking…`);
+        fetch(checker.url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ before_url: p.before_url, after_url: p.after_url, items: p.items, checker: checker.id })
+        }).then(r => r.json())
+          .then(res => { set(ref(db, `${mPath()}/purchases/${id}/ai_verify`), `${checker.name}: ${res.verdict || "no result"}`); })
+          .catch(err => { set(ref(db, `${mPath()}/purchases/${id}/ai_verify`), `${checker.name} error: ${err.message}`); });
+    };
+</script>
 </body>
 </html>
