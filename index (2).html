@@ -976,22 +976,25 @@
         // Gmail-only: the suggestion is delivered purely by email (no Firebase write).
         // The photo lives on ImgBB and rides along as a link.
         setStatus('Sending your suggestion…');
-        const lines = [
-            'New student suggestion — Campus-VendIQ', '',
+        const ts = new Date().toLocaleString('en-MY');
+        const body = [
             'Category: ' + category,
-            'Machine: ' + (machine || '(not specified)'),
-            'From: ' + (userName ? userName + ' ' : '') + '<' + userEmail + '>',
-            'Time: ' + new Date().toLocaleString('en-MY'), '',
-            'Message:', message, '',
-            photoUrl ? ('Photo: ' + photoUrl) : 'Photo: (none attached)'
-        ];
+            'Machine: ' + (machine || 'Not specified'),
+            'From: ' + (userName ? (userName + ' ') : '') + '(' + userEmail + ')',
+            '',
+            'Message:',
+            message,
+            '',
+            'Photo: ' + (photoUrl || 'None attached')
+        ].join('\n');
         try {
             await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
                 email: SUGGEST_TO_EMAIL,            // template "To Email" is {{email}}
                 admin_email: SUGGEST_TO_EMAIL, to_email: SUGGEST_TO_EMAIL,
-                machine: 'Suggestion · ' + category,
-                time: new Date().toLocaleString('en-MY'),
-                message: lines.join('\n')
+                subject: 'New suggestion · ' + category,
+                machine: machine || 'Not specified',
+                time: ts,
+                message: body
             });
             btn.disabled = false; btn.textContent = original;
             setStatus('✅ Sent! Thank you — the team will take a look.', 'var(--success)');
@@ -1217,7 +1220,19 @@
     let userLocationMarker = null;
     let mapRouteLine = null;
     let machinesUnsub = null;          // single live listener for all machines
-    const MACHINE_MAP_ICON_URL = 'assets/vending-machine-map-icon.png';
+    // Map pin drawn inline as an SVG data-URI — no external file, so it ALWAYS loads
+    // (the old assets/*.png sometimes failed to load on a home-screen / PWA launch).
+    const MACHINE_MAP_ICON_URL = 'data:image/svg+xml,' + encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="56" viewBox="0 0 44 56">
+            <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#2b7df0"/><stop offset="1" stop-color="#0a4bb0"/></linearGradient></defs>
+            <path d="M22 54C22 54 6 33 6 20A16 16 0 1 1 38 20C38 33 22 54 22 54Z" fill="url(#g)" stroke="#ffffff" stroke-width="2"/>
+            <rect x="15" y="10" width="14" height="20" rx="2.5" fill="#ffffff"/>
+            <rect x="16.8" y="12.3" width="6.6" height="11" rx="1.2" fill="#cfe0f7"/>
+            <circle cx="26" cy="14.6" r="1.05" fill="#0a4bb0"/>
+            <circle cx="26" cy="17.6" r="1.05" fill="#0a4bb0"/>
+            <rect x="16.8" y="25.4" width="10.4" height="2.8" rx="1.2" fill="#0a2f63"/>
+        </svg>`);
     window.hubMachines = [];           // [{ id, name, loc, lat, lng }]
     window.hubMachinesData = {};       // id -> full machine node (state + inventory)
     window.hubExpandedId = null;       // currently expanded card (accordion)
@@ -1225,7 +1240,7 @@
     window.selectedMapMachineInfo = null;
 
     function getMachineMapIcon() {
-        return window.L.icon({ iconUrl: MACHINE_MAP_ICON_URL, iconSize: [50, 45], iconAnchor: [25, 43], popupAnchor: [0, -40] });
+        return window.L.icon({ iconUrl: MACHINE_MAP_ICON_URL, iconSize: [44, 56], iconAnchor: [22, 54], popupAnchor: [0, -50] });
     }
     function prettyMachineName(id) { return String(id).replace(/^Machine (\d)$/, 'Machine 0$1'); }
     function esc(s) { return String(s).replace(/'/g, "\\'"); }
@@ -1340,8 +1355,16 @@
         }
     };
 
+    window._initMapRetries = 0;
     window.initMap = function () {
-        if (!window.L) { showToast('Map library is still loading. Please try again.', 'info'); return; }
+        // On a home-screen / PWA cold start the Leaflet CDN script may not be ready yet.
+        // Instead of bailing out, retry a few times so the map reliably appears.
+        if (!window.L) {
+            if (window._initMapRetries++ < 20) { setTimeout(window.initMap, 300); }
+            else { showToast('Map is taking a while to load — check your connection.', 'info'); }
+            return;
+        }
+        window._initMapRetries = 0;
         if (!vendingMap) {
             vendingMap = window.L.map('vending-map', { zoomControl: true }).setView([1.5583, 103.6420], 16);
             window.L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
