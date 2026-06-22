@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Campus-VendIQ">
     <link rel="icon" href="icon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="icon.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -1052,7 +1052,7 @@
         if (currentUserData && currentUserData.debt) set(ref(db, `users/${currentUserUID}/debt`), null).catch(() => {});
         showToast('Balance cleared — full access restored. ✅', 'success');
     }
-    window.debtLogout = function () { signOut(auth); };
+    // window.debtLogout is wired to logoutToGateway() below (returns to app.html).
 
     // ---------- MACHINE LISTENERS ----------
     function attachMachineListeners() {
@@ -1520,12 +1520,20 @@
             .catch(e2 => { err.style.color = 'red'; err.innerText = e2.message; });
     });
 
+    // Log out → go back to the app.html gateway (the Student/Admin chooser),
+    // not the in-page student login screen.
+    function logoutToGateway() {
+        window._loggingOut = true;
+        signOut(auth).finally(() => window.location.replace('app.html'));
+    }
+    window.debtLogout = logoutToGateway;
+
     document.getElementById('logout-btn').addEventListener('click', () => {
         appConfirm({
             icon: '🚪', title: 'Log Out',
             message: 'Are you sure you want to log out of Campus-VendIQ?',
             confirmText: 'Log Out',
-            onConfirm: () => signOut(auth)
+            onConfirm: logoutToGateway
         });
     });
 
@@ -1539,6 +1547,7 @@
             requestLocationOnce();
         } else {
             currentUserUID = null;
+            if (window._loggingOut) return;   // a logout redirect is in flight — don't flash the login view
             setAuthMode('login');
             switchView('login-view');
         }

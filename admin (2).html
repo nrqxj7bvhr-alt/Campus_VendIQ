@@ -1221,11 +1221,18 @@
             .catch((e2) => { err.style.color = "red"; err.innerText = e2.message; });
     });
 
+    // Sign out → return to the app.html gateway (Student/Admin chooser).
+    function logoutToGateway() {
+        window._loggingOut = true;
+        signOut(auth).finally(() => window.location.replace('app.html'));
+    }
+
     document.getElementById('logout-btn').addEventListener('click', async () => {
-        if (await appConfirm({ icon: '🚪', title: 'Sign Out', message: 'Sign out of the admin dashboard?', confirmText: 'Sign Out' })) signOut(auth);
+        if (await appConfirm({ icon: '🚪', title: 'Sign Out', message: 'Sign out of the admin dashboard?', confirmText: 'Sign Out' })) logoutToGateway();
     });
 
     onAuthStateChanged(auth, (user) => {
+        if (window._loggingOut) return;   // a logout redirect is in flight
         if (user && ADMIN_EMAILS.includes(user.email)) { switchView('home-view'); startAdminListeners(); }
         else { if (user) signOut(auth); switchView('login-view'); }
     });
