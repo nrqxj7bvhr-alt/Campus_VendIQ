@@ -48,6 +48,25 @@
         #camera-toggle-btn:hover { background: rgba(255,255,255,0.28); filter: none; }
         #camera-toggle-btn.cam-off { background: rgba(220,38,38,0.5); border-color: rgba(239,68,68,0.6); }
 
+        /* ---- ACCESS MODE TOGGLE (Sandbox / Normal) ---- */
+        #mode-toggle-btn {
+            background: rgba(16,185,129,0.32); color: #fff; border: 1px solid rgba(255,255,255,0.45);
+            border-radius: 20px; padding: 4px 12px; cursor: pointer; font-size: 12px; font-weight: 700;
+            width: auto; margin: 0; transition: background 0.2s;
+        }
+        #mode-toggle-btn:hover { background: rgba(16,185,129,0.5); filter: none; }
+        #mode-toggle-btn.normal { background: rgba(217,119,6,0.55); border-color: rgba(245,158,11,0.7); }
+        /* Whole status bar shifts amber in Normal (view-only) mode — obvious at a glance. */
+        body.mode-normal #status-bar { background: #b45309; }
+        /* Dim only the truly destructive control so it reads as "locked" (nav stays clear). */
+        body.mode-normal #emergency-reset-btn { opacity: 0.55; }
+        #mode-banner {
+            display: none; background: #fffbeb; color: #92400e; border: 1px solid #fde68a;
+            border-left: 4px solid var(--warning); border-radius: 8px; padding: 10px 14px;
+            margin-bottom: 12px; font-size: 13px; font-weight: 600;
+        }
+        body.mode-normal #mode-banner { display: block; }
+
         /* ---- FAB ---- */
         #fab-camera {
             position: fixed; bottom: 24px; right: 24px;
@@ -319,6 +338,7 @@
         <span id="phase-badge">idle</span>
     </div>
     <div class="status-right">
+        <button id="mode-toggle-btn" onclick="toggleAdminMode()" title="Sandbox = full access · Normal = view only">🧪 Sandbox</button>
         <button id="camera-toggle-btn" onclick="toggleCamera()">📷 CAM: ON</button>
     </div>
 </div>
@@ -348,6 +368,8 @@
 
 <!-- MAIN APP VIEWS (inside scrollable container) -->
 <div class="app-container with-bar" id="main-container" style="display:none;">
+
+    <div id="mode-banner">🔒 Normal mode — view only. Switch to <strong>Sandbox</strong> (top right) to make changes.</div>
 
     <!-- HOME DASHBOARD -->
     <div id="home-view" class="view active-view">
@@ -422,7 +444,7 @@
             <button class="btn-warning" onclick="switchView('snapshots-view')">🚨 Security</button>
             <button class="btn-danger span-2" onclick="switchView('debts-view')">💸 Unpaid Debts (<span id="admin-debt-count">0</span>)</button>
             <button class="btn-purple span-2" onclick="switchView('review-view')">🔍 Purchase Review</button>
-            <button class="btn-danger span-2" onclick="emergencyReset()">🛑 Emergency Reset Machine</button>
+            <button id="emergency-reset-btn" class="btn-danger span-2" onclick="emergencyReset()">🛑 Emergency Reset Machine</button>
         </div>
         <p class="text-muted" style="text-align:center;font-size:11px;margin-bottom:16px;">Clears stuck session, relocks door, silences alarms.</p>
         <button class="btn-danger" id="logout-btn">Sign Out</button>
@@ -505,7 +527,7 @@
             <button class="back-btn" onclick="switchView('home-view')">←</button>
             <h2>Unpaid Debts</h2>
         </div>
-        <p class="text-muted" style="font-size:12px;margin-bottom:12px;">Students who took more than their balance and didn't pay within 5 minutes. The photos are the before/after of that purchase — evidence for follow-up.</p>
+        <p class="text-muted" style="font-size:12px;margin-bottom:12px;">Students who took more than their balance and didn't pay within 30 seconds. The photos are the before/after of that purchase — evidence for follow-up.</p>
         <div id="debts-list">Loading...</div>
     </div>
 
@@ -561,15 +583,22 @@
             <div class="bulk-bar-top">
                 <div class="bulk-bar-icon">📸</div>
                 <div>
-                    <div class="bulk-bar-title">Bulk delete photos</div>
-                    <div class="bulk-bar-sub">Tick photos, then delete</div>
+                    <div class="bulk-bar-title">Bulk actions</div>
+                    <div class="bulk-bar-sub">Tick photos, then AI-detect or delete</div>
                 </div>
                 <span id="camera-selected-count" class="bulk-count">0 selected</span>
             </div>
             <div class="bulk-actions">
                 <button type="button" onclick="selectAllCameraLogs()" class="bbtn bbtn-sel">✓ Select all</button>
                 <button type="button" onclick="clearCameraLogSelection()" class="bbtn bbtn-clear">Clear</button>
-                <button type="button" onclick="deleteSelectedCameraLogs()" class="bbtn bbtn-del">🗑 Delete</button>
+                <div class="bulk-menu-wrap">
+                    <button type="button" class="bbtn bbtn-actions" onclick="toggleBulkMenu(this)">⚙️ Actions ▾</button>
+                    <div class="bulk-menu">
+                        <button type="button" onclick="closeBulkMenus();aiDetectSelectedCameraLogs()">🔎 AI detect selected</button>
+                        <div class="bulk-menu-sep"></div>
+                        <button type="button" class="danger" onclick="closeBulkMenus();deleteSelectedCameraLogs()">🗑 Delete selected</button>
+                    </div>
+                </div>
             </div>
         </div>
         <div id="camera-logs-list">Loading...</div>
@@ -715,6 +744,34 @@
         host.appendChild(el);
         requestAnimationFrame(() => el.classList.add('show'));
         setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 260); }, ms);
+    };
+
+    // ---------- ACCESS MODE (Sandbox = full access · Normal = view only) ----------
+    // Client-side demo gate. Firebase rules stay public on purpose; this just lets you
+    // show a "locked down" admin during the demo without changing the backend.
+    window.adminMode = (function () {
+        try { return localStorage.getItem('cvq-admin-mode') === 'normal' ? 'normal' : 'sandbox'; }
+        catch (e) { return 'sandbox'; }
+    })();
+    function applyAdminModeUI() {
+        const normal = window.adminMode === 'normal';
+        document.body.classList.toggle('mode-normal', normal);
+        const btn = document.getElementById('mode-toggle-btn');
+        if (btn) { btn.textContent = normal ? '🔒 Normal' : '🧪 Sandbox'; btn.classList.toggle('normal', normal); }
+    }
+    window.toggleAdminMode = function () {
+        window.adminMode = (window.adminMode === 'normal') ? 'sandbox' : 'normal';
+        try { localStorage.setItem('cvq-admin-mode', window.adminMode); } catch (e) {}
+        applyAdminModeUI();
+        appToast(window.adminMode === 'normal'
+            ? '🔒 Normal mode — view only. Changes are blocked.'
+            : '🧪 Sandbox mode — full access enabled.', window.adminMode === 'normal' ? 'info' : 'success');
+    };
+    // Guard used by every write/destructive/machine-control action.
+    window.sandboxAllow = function () {
+        if (window.adminMode === 'sandbox') return true;
+        appToast('🔒 Normal mode — switch to Sandbox (top right) to make changes.', 'info', 2800);
+        return false;
     };
 
     window.dynamicConfig = {};
@@ -1935,7 +1992,11 @@
                         <p style="margin:8px 0 0;font-size:14px;font-weight:600;">${stage}${reason ? ' · ' + reason : ''}</p>
                         <p style="font-size:13px;color:var(--text-light);">${formatDate(l.timestamp)}</p>
                         <p style="font-size:13px;color:var(--primary);font-weight:600;">${user}</p>
-                        <button onclick="deleteCameraLog('${l.id}','${img}')" style="margin-top:8px;background:var(--danger);color:white;border:none;border-radius:6px;padding:6px 16px;cursor:pointer;font-size:12px;font-weight:700;width:auto;">Delete</button>
+                        <div id="aiid-${l.id}" style="display:none;font-size:13px;font-weight:700;margin:6px 0;padding:8px 10px;border-radius:8px;"></div>
+                        <div style="display:flex;gap:6px;justify-content:center;margin-top:8px;">
+                            <button onclick="identifyItem('${encodeURIComponent(img)}','${l.id}')" style="background:#6f42c1;color:white;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:700;width:auto;margin:0;">🔎 Identify item (AI)</button>
+                            <button onclick="deleteCameraLog('${l.id}','${img}')" style="background:var(--danger);color:white;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:700;width:auto;margin:0;">Delete</button>
+                        </div>
                     </div>`);
                 });
             }
@@ -2174,6 +2235,103 @@
         btn.disabled = false; btn.textContent = '📷 Test Capture';
     };
 
+    // ---------- AI ITEM DETECTION (browser-direct) ----------
+    // FREE option (recommended): Gemini — make a free key at aistudio.google.com
+    // (Google AI Studio → "Create API key"), no billing/credit card needed. Paste it
+    // into GEMINI_API_KEY below and keep AI_PROVIDER = 'gemini'.
+    // Paid option: Claude vision — set AI_PROVIDER = 'claude' and fill ANTHROPIC_API_KEY.
+    const AI_PROVIDER     = 'gemini';                // 'gemini' (free) or 'claude'
+    const GEMINI_API_KEY  = "";
+    const GEMINI_MODEL    = "gemini-2.0-flash";      // free-tier vision model
+    const ANTHROPIC_API_KEY = "";
+    const AI_VISION_MODEL = "claude-haiku-4-5";      // cheapest Claude vision
+    const AI_PROMPT = 'This is a photo from a vending-machine tray/slot. Identify the single product shown. Reply in ONE short line as: "<product name> · <confidence: high/medium/low>". If you truly cannot tell, reply "Unclear".';
+
+    const aiKeyMissing = () => (AI_PROVIDER === 'claude' ? !ANTHROPIC_API_KEY : !GEMINI_API_KEY);
+    const aiSetupMessage = () => (AI_PROVIDER === 'claude'
+        ? 'Set AI_PROVIDER and paste an Anthropic API key into ANTHROPIC_API_KEY in admin.html.'
+        : 'Get a FREE key at aistudio.google.com (Google AI Studio → "Create API key" — no billing needed), then paste it into GEMINI_API_KEY in admin.html.');
+
+    // Gemini needs the raw image bytes, so the browser fetches the photo and base64s it.
+    async function urlToBase64(url) {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Could not load the photo (HTTP ' + res.status + ')');
+        const blob = await res.blob();
+        const mime = blob.type || 'image/jpeg';
+        const data = await new Promise((resolve, reject) => {
+            const r = new FileReader();
+            r.onloadend = () => resolve(String(r.result).split(',')[1]);
+            r.onerror = () => reject(new Error('Could not read the photo'));
+            r.readAsDataURL(blob);
+        });
+        return { mime, data };
+    }
+
+    // Run one detection; returns the detection text or throws.
+    async function detectItemOnce(url) {
+        if (AI_PROVIDER === 'claude') {
+            const res = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY,
+                    'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+                body: JSON.stringify({ model: AI_VISION_MODEL, max_tokens: 200, messages: [{ role: 'user',
+                    content: [{ type: 'image', source: { type: 'url', url } }, { type: 'text', text: AI_PROMPT }] }] })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error((data && data.error && data.error.message) || ('HTTP ' + res.status));
+            return (data.content || []).filter(b => b.type === 'text').map(b => b.text).join(' ').trim() || 'No result';
+        }
+        // Gemini (free)
+        const { mime, data: b64 } = await urlToBase64(url);
+        const ep = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
+        const res = await fetch(ep, {
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ inline_data: { mime_type: mime, data: b64 } }, { text: AI_PROMPT }] }] })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error((data && data.error && data.error.message) || ('HTTP ' + res.status));
+        const parts = (((data.candidates || [])[0] || {}).content || {}).parts || [];
+        return parts.map(p => p.text).filter(Boolean).join(' ').trim() || 'No result';
+    }
+
+    function aiResultShow(id, html, color, bg) {
+        const box = document.getElementById('aiid-' + id);
+        if (box) { box.style.display = 'block'; box.style.color = color; box.style.background = bg; box.innerHTML = html; }
+    }
+
+    window.identifyItem = async function (encUrl, id) {
+        const url = decodeURIComponent(encUrl || '');
+        if (aiKeyMissing()) {
+            appConfirm({ icon: '🤖', title: 'AI Vision — add a key to go live',
+                message: 'This sends the photo to an AI model and shows the detected product.\n\n' + aiSetupMessage(),
+                confirmText: 'Got it', danger: false });
+            return;
+        }
+        if (!url || url.includes('placehold.co')) { aiResultShow(id, 'No photo to analyse.', 'var(--text-light)', '#f1f5f9'); return; }
+        aiResultShow(id, '🤖 Analysing the photo…', 'var(--info)', '#eff6ff');
+        try { aiResultShow(id, '🔎 ' + await detectItemOnce(url), 'var(--success)', 'rgba(5,150,105,.10)'); }
+        catch (e) { aiResultShow(id, '❌ ' + ((e && e.message) || 'AI check failed') + ' — the photo URL must be public + allow cross-origin (ImgBB works).', 'var(--danger)', '#fef2f2'); }
+    };
+
+    // Bulk: run AI detection on every ticked Camera Logs photo (sequentially, to respect rate limits).
+    window.aiDetectSelectedCameraLogs = async function () {
+        const records = Array.from(window.selectedCameraLogs.values());
+        if (!records.length) { appToast('Select at least one photo first.', 'info'); return; }
+        if (aiKeyMissing()) {
+            appConfirm({ icon: '🤖', title: 'AI Vision — add a key to go live', message: aiSetupMessage(), confirmText: 'Got it', danger: false });
+            return;
+        }
+        appToast(`Running AI detection on ${records.length} photo(s)…`, 'info', 3000);
+        let done = 0, ok = 0;
+        for (const r of records) {
+            aiResultShow(r.id, '🤖 Analysing…', 'var(--info)', '#eff6ff');
+            try { aiResultShow(r.id, '🔎 ' + await detectItemOnce(r.imageUrl), 'var(--success)', 'rgba(5,150,105,.10)'); ok++; }
+            catch (e) { aiResultShow(r.id, '❌ ' + ((e && e.message) || 'failed'), 'var(--danger)', '#fef2f2'); }
+            done++;
+        }
+        appToast(`AI detection done — ${ok}/${done} succeeded. Step through the photos to see results.`, ok ? 'success' : 'error', 3800);
+    };
+
     const AI_FUNCTION_URL = "";   // legacy single endpoint (mapped to "Cloud Function" below)
     // Multiple AI checkers — wire each one's `url` to its vision endpoint. The foldable
     // "AI Check" button in Purchase Review lets the admin choose which one to run.
@@ -2204,6 +2362,30 @@
           .then(res => { set(ref(db, `${mPath()}/purchases/${id}/ai_verify`), `${checker.name}: ${res.verdict || "no result"}`); })
           .catch(err => { set(ref(db, `${mPath()}/purchases/${id}/ai_verify`), `${checker.name} error: ${err.message}`); });
     };
+
+    // ---------- GATE every write/destructive/machine-control action behind Sandbox ----------
+    // One choke-point: in Normal mode these no-op (with a toast). Reads/monitoring stay open.
+    [
+        'toggleCamera', 'cycleCameraStorage', 'testCameraCapture',
+        'adminOpenDoor', 'adminCmd', 'resetSlotProduct', 'saveMachineConfig', 'emergencyReset',
+        'applyBalanceAdjust',
+        'deletePurchase', 'deleteAlert', 'deleteCameraLog',
+        'deleteSelectedTransactions', 'deleteSelectedCameraLogs', 'deleteSelectedSecurityAlerts', 'deleteSelectedReviewPurchases',
+        'toggleResolved', 'toggleAlertResolved',
+        'resolveSelectedSecurityAlerts', 'reopenSelectedSecurityAlerts',
+        'resolveSelectedReviewPurchases', 'reopenSelectedReviewPurchases',
+        'aiCheckSelectedReviewPurchases', 'runAICheck'
+    ].forEach(name => {
+        const orig = window[name];
+        if (typeof orig === 'function') {
+            window[name] = function (...args) {
+                if (!window.sandboxAllow()) return;
+                return orig.apply(this, args);
+            };
+        }
+    });
+
+    applyAdminModeUI();   // reflect the persisted mode on load
 </script>
 </body>
 </html>

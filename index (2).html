@@ -373,6 +373,13 @@
         .settings-row-title { font-size: 15px; font-weight: 700; color: var(--text); }
         .settings-row-sub { font-size: 12px; color: var(--text-light); margin-top: 2px; line-height: 1.35; }
         .settings-row-arrow { font-size: 26px; color: var(--text-light); line-height: 1; flex-shrink: 0; }
+        .lang-toggle { display: flex; gap: 4px; background: #eef1f6; border-radius: 11px; padding: 3px; flex-shrink: 0; }
+        .lang-pill { width: auto; margin: 0; padding: 7px 12px; border-radius: 9px; font-size: 12.5px; font-weight: 800;
+            background: transparent; color: var(--text-light); box-shadow: none; border: 1px solid transparent; }
+        .lang-pill:hover { filter: none; }
+        .lang-pill.active { background: #fff; color: var(--primary); box-shadow: var(--shadow); }
+        #notif-state { background: var(--primary-light); color: var(--primary); }
+        #notif-state.active { background: rgba(31,170,85,.14); color: var(--success); }
 
         .feedback-hero { display: flex; align-items: center; gap: 14px; background: var(--grad-hero); color: #fff;
             border-radius: 18px; padding: 16px 18px; margin-bottom: 18px; box-shadow: 0 14px 30px -12px rgba(10,76,179,.55); }
@@ -409,7 +416,7 @@
             <img src="icon.svg" alt="" width="78" height="78"
                  style="margin-bottom:12px;border-radius:20px;box-shadow:0 10px 24px rgba(0,0,0,.28);">
             <div class="app-name">Campus-VendIQ</div>
-            <div class="app-tagline">Fast · Cashless · Smart</div>
+            <div class="app-tagline" data-i18n="tagline">Fast · Cashless · Smart</div>
         </div>
         <div class="login-body">
             <div class="auth-tabs">
@@ -442,40 +449,40 @@
             <p id="welcome-name" style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:14px;">Welcome!</p>
 
             <div class="balance-card">
-                <span class="balance-chip">💳 Campus-VendIQ Wallet</span>
-                <div class="balance-label">Available Balance</div>
+                <span class="balance-chip" data-i18n="wallet_chip">💳 Campus-VendIQ Wallet</span>
+                <div class="balance-label" data-i18n="bal_label">Available Balance</div>
                 <div class="balance-amount"><span class="cur">RM</span><span id="user-balance">0.00</span></div>
-                <div class="balance-sub" id="balance-status-text">Ready to vend</div>
+                <div class="balance-sub" id="balance-status-text" data-i18n="status_ready">Ready to vend</div>
             </div>
 
             <div class="quick-grid">
                 <div class="quick-btn feature" onclick="switchView('machines-view')">
                     <span class="qb-icon">🛒</span>
                     <div>
-                        <div class="qb-label">Buy &amp; Find Machines</div>
-                        <div class="qb-sub">Live map · stock · directions · unlock</div>
+                        <div class="qb-label" data-i18n="qa_buy_t">Buy &amp; Find Machines</div>
+                        <div class="qb-sub" data-i18n="qa_buy_s">Live map · stock · directions · unlock</div>
                     </div>
                     <span class="qb-arrow">→</span>
                 </div>
                 <div class="quick-btn" onclick="switchView('topup-view')" style="--ic-bg:#e3f2ff;">
                     <span class="qb-icon">💳</span>
-                    <div><div class="qb-label">Reload</div><div class="qb-sub">Top up with Touch 'n Go</div></div>
+                    <div><div class="qb-label" data-i18n="qa_reload_t">Reload</div><div class="qb-sub" data-i18n="qa_reload_s">Top up with Touch 'n Go</div></div>
                 </div>
                 <div class="quick-btn" onclick="switchView('transfer-view')" style="--ic-bg:#dcf5ee;">
                     <span class="qb-icon">↔️</span>
-                    <div><div class="qb-label">Transfer</div><div class="qb-sub">Send RM to a friend</div></div>
+                    <div><div class="qb-label" data-i18n="qa_transfer_t">Transfer</div><div class="qb-sub" data-i18n="qa_transfer_s">Send RM to a friend</div></div>
                 </div>
                 <div class="quick-btn" onclick="switchView('history-view')" style="--ic-bg:#eceef3;">
                     <span class="qb-icon">📜</span>
-                    <div><div class="qb-label">History</div><div class="qb-sub">Purchases &amp; top-ups</div></div>
+                    <div><div class="qb-label" data-i18n="qa_history_t">History</div><div class="qb-sub" data-i18n="qa_history_s">Purchases &amp; top-ups</div></div>
                 </div>
                 <div class="quick-btn" onclick="switchView('profile-view')" style="--ic-bg:#efe7fb;">
                     <span class="qb-icon">⚙️</span>
-                    <div><div class="qb-label">Settings</div><div class="qb-sub">Account &amp; feedback</div></div>
+                    <div><div class="qb-label" data-i18n="qa_settings_t">Settings</div><div class="qb-sub" data-i18n="qa_settings_s">Account &amp; feedback</div></div>
                 </div>
             </div>
 
-            <button class="btn-danger" id="logout-btn" style="margin-top:8px;">Log Out</button>
+            <button class="btn-danger" id="logout-btn" style="margin-top:8px;" data-i18n="logout">Log Out</button>
         </div>
     </div>
 
@@ -483,7 +490,7 @@
     <div id="profile-view" class="view" style="padding:0;">
         <div class="app-bar">
             <button class="back-btn-bar" onclick="switchView('home-view')">←</button>
-            <h1>Settings</h1>
+            <h1 data-i18n="bar_settings">Settings</h1>
         </div>
         <div style="padding:20px;">
             <div style="text-align:center;margin-bottom:20px;">
@@ -492,7 +499,7 @@
                 <p class="text-muted" id="profile-email-display">–</p>
             </div>
 
-            <div class="settings-label">Account</div>
+            <div class="settings-label" data-i18n="sec_account">Account</div>
             <div class="card card-border">
                 <div class="profile-info-row">
                     <span class="pir-label">Full Name</span>
@@ -514,18 +521,39 @@
                 <p id="edit-name-msg" style="font-size:13px;margin-top:8px;"></p>
             </div>
 
-            <div class="settings-label">Help &amp; Feedback</div>
+            <div class="settings-label" data-i18n="sec_prefs">Preferences</div>
+            <div class="settings-row" style="cursor:default;">
+                <div class="settings-row-ic" style="background:#eaf3ff;">🌐</div>
+                <div style="flex:1;">
+                    <div class="settings-row-title" data-i18n="row_lang_t">Language</div>
+                    <div class="settings-row-sub" data-i18n="row_lang_s">English / Bahasa Melayu</div>
+                </div>
+                <div class="lang-toggle">
+                    <button type="button" class="lang-pill" data-lang-btn="en" onclick="setLang('en')">EN</button>
+                    <button type="button" class="lang-pill" data-lang-btn="bm" onclick="setLang('bm')">BM</button>
+                </div>
+            </div>
+            <div class="settings-row" style="cursor:default;margin-top:10px;">
+                <div class="settings-row-ic" style="background:#fff1d6;">🔔</div>
+                <div style="flex:1;">
+                    <div class="settings-row-title" data-i18n="row_notif_t">Notifications</div>
+                    <div class="settings-row-sub" data-i18n="row_notif_s">Low balance &amp; alerts on this device</div>
+                </div>
+                <button type="button" id="notif-state" class="lang-pill" onclick="requestNotif()">Enable</button>
+            </div>
+
+            <div class="settings-label" data-i18n="sec_help">Help &amp; Feedback</div>
             <div class="settings-row" onclick="switchView('suggestion-view')">
                 <div class="settings-row-ic" style="background:#e3f2ff;">💬</div>
                 <div style="flex:1;">
-                    <div class="settings-row-title">Send a Suggestion</div>
-                    <div class="settings-row-sub">Restocking, machine issues, ideas — with a photo</div>
+                    <div class="settings-row-title" data-i18n="row_suggest_t">Send a Suggestion</div>
+                    <div class="settings-row-sub" data-i18n="row_suggest_s">Restocking, machine issues, ideas — with a photo</div>
                 </div>
                 <span class="settings-row-arrow">›</span>
             </div>
 
-            <div class="settings-label">Security</div>
-            <button onclick="sendPasswordReset()" class="btn-outline" style="margin-top:0;">🔐 Send Password Reset Email</button>
+            <div class="settings-label" data-i18n="sec_security">Security</div>
+            <button onclick="sendPasswordReset()" class="btn-outline" style="margin-top:0;" data-i18n="pw_reset">🔐 Send Password Reset Email</button>
         </div>
     </div>
 
@@ -533,7 +561,7 @@
     <div id="suggestion-view" class="view" style="padding:0;">
         <div class="app-bar">
             <button class="back-btn-bar" onclick="switchView('profile-view')">←</button>
-            <h1>Send a Suggestion</h1>
+            <h1 data-i18n="bar_suggest">Send a Suggestion</h1>
         </div>
         <div style="padding:20px;">
             <div class="feedback-hero">
@@ -581,7 +609,7 @@
     <div id="topup-view" class="view" style="padding:0;">
         <div class="app-bar">
             <button class="back-btn-bar" onclick="switchView('home-view')">←</button>
-            <h1>Reload Balance</h1>
+            <h1 data-i18n="bar_reload">Reload Balance</h1>
         </div>
         <div style="padding:20px;">
             <div id="debt-banner" style="display:none;background:#fde8e8;border:1.5px solid var(--danger);border-radius:10px;padding:14px;margin-bottom:16px;">
@@ -614,7 +642,7 @@
     <div id="transfer-view" class="view" style="padding:0;">
         <div class="app-bar">
             <button class="back-btn-bar" onclick="switchView('home-view')">←</button>
-            <h1>Transfer Balance</h1>
+            <h1 data-i18n="bar_transfer">Transfer Balance</h1>
         </div>
         <div style="padding:20px;">
             <div class="balance-card" style="margin-bottom:20px;">
@@ -636,7 +664,7 @@
     <div id="machines-view" class="view" style="padding:0;">
         <div class="app-bar">
             <button class="back-btn-bar" onclick="switchView('home-view')">←</button>
-            <h1>Machines</h1>
+            <h1 data-i18n="bar_machines">Machines</h1>
         </div>
         <div class="map-frame">
             <div id="vending-map" style="width:100%;height:42vh;min-height:260px;z-index:1;"></div>
@@ -644,7 +672,7 @@
         </div>
         <div class="machine-sheet">
             <div class="sheet-grip"></div>
-            <p class="hub-tip">Tap a machine to see live stock &amp; directions.</p>
+            <p class="hub-tip" data-i18n="hub_tip">Tap a machine to see live stock &amp; directions.</p>
             <div id="machine-card-list">
                 <div class="hub-empty"><div class="loader"></div></div>
             </div>
@@ -722,7 +750,7 @@
     <div id="history-view" class="view" style="padding:0;">
         <div class="app-bar">
             <button class="back-btn-bar" onclick="switchView('home-view')">←</button>
-            <h1>Transaction History</h1>
+            <h1 data-i18n="bar_history">Transaction History</h1>
         </div>
         <div style="padding:20px;">
             <button onclick="showLastReceipt()" class="btn-outline btn-sm" style="width:100%;margin-bottom:14px;">🧾 View Last Receipt</button>
@@ -751,7 +779,7 @@
             <p style="color:var(--text-light);font-size:14px;margin:8px 0;">Items taken: <strong id="negative-items-display"></strong></p>
             <div style="font-size:30px;font-weight:800;color:var(--danger);margin:6px 0;">- RM <span id="negative-amount-display">0.00</span></div>
             <p style="font-size:13px;color:var(--danger);font-weight:600;margin:10px 0;">Failure to clear this debt will be reported to UTM Administration.</p>
-            <p style="font-size:13px;color:var(--text-light);">Auto-action in: <span id="reload-countdown" style="font-weight:800;color:var(--danger);">5:00</span></p>
+            <p style="font-size:13px;color:var(--text-light);">Auto-action in: <span id="reload-countdown" style="font-weight:800;color:var(--danger);">0:30</span></p>
             <button id="force-reload-btn" style="background:var(--danger);margin-top:14px;">Reload Balance Now</button>
         </div>
     </div>
@@ -1012,6 +1040,94 @@
         }
     };
 
+    // ---------- LANGUAGE (English / Bahasa Melayu) ----------
+    const I18N = {
+        en: {
+            tagline: 'Fast · Cashless · Smart',
+            wallet_chip: '💳 Campus-VendIQ Wallet', bal_label: 'Available Balance',
+            qa_buy_t: 'Buy & Find Machines', qa_buy_s: 'Live map · stock · directions · unlock',
+            qa_reload_t: 'Reload', qa_reload_s: "Top up with Touch 'n Go",
+            qa_transfer_t: 'Transfer', qa_transfer_s: 'Send RM to a friend',
+            qa_history_t: 'History', qa_history_s: 'Purchases & top-ups',
+            qa_settings_t: 'Settings', qa_settings_s: 'Account & feedback',
+            logout: 'Log Out',
+            bar_machines: 'Machines', bar_reload: 'Reload Balance', bar_transfer: 'Transfer Balance',
+            bar_history: 'Transaction History', bar_settings: 'Settings', bar_suggest: 'Send a Suggestion',
+            hub_tip: 'Tap a machine to see live stock & directions.',
+            sec_account: 'Account', sec_help: 'Help & Feedback', sec_security: 'Security', sec_prefs: 'Preferences',
+            row_suggest_t: 'Send a Suggestion', row_suggest_s: 'Restocking, machine issues, ideas — with a photo',
+            row_lang_t: 'Language', row_lang_s: 'English / Bahasa Melayu',
+            row_notif_t: 'Notifications', row_notif_s: 'Low balance & alerts on this device',
+            pw_reset: '🔐 Send Password Reset Email',
+            status_ready: 'Ready to vend', status_topup: 'Add balance to start buying',
+            status_neg: '⚠️ Negative balance — top up before buying',
+            greet_morning: 'Good morning', greet_afternoon: 'Good afternoon', greet_evening: 'Good evening', welcome: 'Welcome!'
+        },
+        bm: {
+            tagline: 'Pantas · Tanpa Tunai · Pintar',
+            wallet_chip: '💳 Dompet Campus-VendIQ', bal_label: 'Baki Tersedia',
+            qa_buy_t: 'Beli & Cari Mesin', qa_buy_s: 'Peta · stok · arah · buka',
+            qa_reload_t: 'Tambah Nilai', qa_reload_s: "Tambah nilai guna Touch 'n Go",
+            qa_transfer_t: 'Pindah', qa_transfer_s: 'Hantar RM kepada rakan',
+            qa_history_t: 'Sejarah', qa_history_s: 'Pembelian & tambah nilai',
+            qa_settings_t: 'Tetapan', qa_settings_s: 'Akaun & maklum balas',
+            logout: 'Log Keluar',
+            bar_machines: 'Mesin', bar_reload: 'Tambah Nilai', bar_transfer: 'Pindah Baki',
+            bar_history: 'Sejarah Transaksi', bar_settings: 'Tetapan', bar_suggest: 'Hantar Cadangan',
+            hub_tip: 'Ketik mesin untuk lihat stok & arah.',
+            sec_account: 'Akaun', sec_help: 'Bantuan & Maklum Balas', sec_security: 'Keselamatan', sec_prefs: 'Keutamaan',
+            row_suggest_t: 'Hantar Cadangan', row_suggest_s: 'Stok, masalah mesin, idea — dengan foto',
+            row_lang_t: 'Bahasa', row_lang_s: 'English / Bahasa Melayu',
+            row_notif_t: 'Pemberitahuan', row_notif_s: 'Baki rendah & makluman di peranti ini',
+            pw_reset: '🔐 Hantar E-mel Set Semula Kata Laluan',
+            status_ready: 'Sedia untuk membeli', status_topup: 'Tambah baki untuk mula membeli',
+            status_neg: '⚠️ Baki negatif — tambah nilai dahulu',
+            greet_morning: 'Selamat pagi', greet_afternoon: 'Selamat tengah hari', greet_evening: 'Selamat petang', welcome: 'Selamat datang!'
+        }
+    };
+    window.LANG = (() => { try { return localStorage.getItem('cvq-lang') === 'bm' ? 'bm' : 'en'; } catch (e) { return 'en'; } })();
+    window.t = (k) => (I18N[window.LANG] || I18N.en)[k] ?? (I18N.en[k] ?? k);
+    window.applyLang = function () {
+        document.documentElement.lang = (window.LANG === 'bm' ? 'ms' : 'en');
+        document.querySelectorAll('[data-i18n]').forEach(el => { const v = window.t(el.getAttribute('data-i18n')); if (v != null) el.textContent = v; });
+        document.querySelectorAll('[data-lang-btn]').forEach(b => b.classList.toggle('active', b.getAttribute('data-lang-btn') === window.LANG));
+        if (window.refreshGreeting) window.refreshGreeting();
+        if (window.renderAccordion) window.renderAccordion();
+    };
+    window.setLang = function (l) { window.LANG = (l === 'bm' ? 'bm' : 'en'); try { localStorage.setItem('cvq-lang', window.LANG); } catch (e) {} applyLang(); };
+    window.refreshGreeting = function () {
+        const el = document.getElementById('welcome-name');
+        if (!el) return;
+        const name = (currentUserData && currentUserData.fullname) || '';
+        const first = name ? name.split(' ')[0] : '';
+        const h = new Date().getHours();
+        const greet = h < 12 ? window.t('greet_morning') : h < 18 ? window.t('greet_afternoon') : window.t('greet_evening');
+        el.innerText = first ? `${greet}, ${first}! 👋` : `${window.t('welcome')} 👋`;
+    };
+
+    // ---------- WEB NOTIFICATIONS (low balance, debt, alerts) ----------
+    window.notifOK = () => ('Notification' in window) && Notification.permission === 'granted';
+    window.requestNotif = function () {
+        if (!('Notification' in window)) { showToast('Notifications are not supported here.', 'info'); return; }
+        Notification.requestPermission().then(p => {
+            updateNotifRow();
+            if (p === 'granted') { showToast('Notifications enabled ✅', 'success'); pushNote('Campus-VendIQ', window.LANG === 'bm' ? 'Pemberitahuan dihidupkan.' : "You'll get alerts here."); }
+            else showToast('Notifications blocked — enable them in browser settings.', 'info');
+        });
+    };
+    window.pushNote = function (title, body) {
+        if (!window.notifOK()) return;
+        try { new Notification(title, { body, icon: 'apple-touch-icon.png', badge: 'apple-touch-icon.png' }); } catch (e) {}
+    };
+    window.updateNotifRow = function () {
+        const el = document.getElementById('notif-state');
+        if (!el) return;
+        const on = window.notifOK();
+        el.textContent = on ? (window.LANG === 'bm' ? 'Dihidupkan' : 'On') : (window.LANG === 'bm' ? 'Hidupkan' : 'Enable');
+        el.className = 'lang-pill' + (on ? ' active' : '');
+    };
+    window._lowNotified = false;   // debounce low-balance pings
+
     // ---------- LAST RECEIPT (re-viewable, stored per-device) ----------
     window.showLastReceipt = function () {
         let r = null;
@@ -1042,7 +1158,10 @@
         // Force the student onto the top-up page if they're anywhere else.
         const active = document.querySelector('.view.active-view');
         if (!active || active.id !== 'topup-view') switchView('topup-view');
-        if (!wasLocked) showToast('You owe RM ' + Math.abs(bal).toFixed(2) + ' — top up to continue.', 'error', 3500);
+        if (!wasLocked) {
+            showToast('You owe RM ' + Math.abs(bal).toFixed(2) + ' — top up to continue.', 'error', 3500);
+            pushNote('Campus-VendIQ', (window.LANG === 'bm' ? 'Anda berhutang RM ' : 'You owe RM ') + Math.abs(bal).toFixed(2) + (window.LANG === 'bm' ? ' — tambah nilai untuk teruskan.' : ' — top up to continue.'));
+        }
     }
     function exitDebtLock() {
         if (!window.debtLock) return;          // only act on the negative→cleared transition
@@ -1537,11 +1656,15 @@
         });
     });
 
+    applyLang();   // apply saved language on first paint (works on the login screen too)
+
     onAuthStateChanged(auth, user => {
         if (user) {
             currentUserUID = user.uid;
             switchView('home-view');
             listenToUserData();
+            applyLang();
+            if (window.updateNotifRow) updateNotifRow();
             // Ask for location ONCE, right after entering — then it's cached and
             // reused for the map & directions without prompting again.
             requestLocationOnce();
@@ -1728,12 +1851,7 @@
             currentUserData = snap.val() || {};
             const name = currentUserData.fullname || '';
             const email = currentUserData.email || '';
-            if (document.getElementById('welcome-name')) {
-                const h = new Date().getHours();
-                const greet = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
-                const first = name ? name.split(' ')[0] : '';
-                document.getElementById('welcome-name').innerText = first ? `${greet}, ${first}! 👋` : `${greet}! 👋`;
-            }
+            window.refreshGreeting();
             if (document.getElementById('profile-name-display')) document.getElementById('profile-name-display').innerText = name || '(no name)';
             if (document.getElementById('profile-email-display')) document.getElementById('profile-email-display').innerText = email;
             if (document.getElementById('pir-name')) document.getElementById('pir-name').innerText = name || '–';
@@ -1752,10 +1870,18 @@
 
             const statusText = document.getElementById('balance-status-text');
             if (statusText) {
-                if (activeUserBalance < 0) statusText.innerText = '⚠️ Negative balance — top up before buying';
-                else if (activeUserBalance === 0) statusText.innerText = 'Add balance to start buying';
-                else statusText.innerText = 'Ready to vend';
+                if (activeUserBalance < 0) statusText.innerText = window.t('status_neg');
+                else if (activeUserBalance === 0) statusText.innerText = window.t('status_topup');
+                else statusText.innerText = window.t('status_ready');
             }
+
+            // Web notification: gently warn once when balance runs low (but not negative).
+            if (activeUserBalance > 0 && activeUserBalance < 2) {
+                if (!window._lowNotified) {
+                    window._lowNotified = true;
+                    pushNote('Campus-VendIQ', (window.LANG === 'bm' ? 'Baki rendah: RM ' : 'Low balance: RM ') + f + (window.LANG === 'bm' ? ' — tambah nilai segera.' : ' — top up soon.'));
+                }
+            } else if (activeUserBalance >= 2) { window._lowNotified = false; }
 
             // Refresh affordability hints with the new balance (local re-render, no DB read).
             if (window.renderStudentInventory) window.renderStudentInventory();
@@ -1990,7 +2116,7 @@
 
         if (newBalance < 0) {
             // Persist debt evidence (photos + details) immediately — survives even if
-            // the student closes the browser during the 5-minute grace period.
+            // the student closes the browser during the 30-second grace period.
             set(ref(db, `users/${currentUserUID}/debt`), {
                 amount: Math.round(Math.abs(newBalance) * 100) / 100,
                 items: description,
@@ -2009,7 +2135,7 @@
         document.getElementById('negative-items-display').innerText = description;
         document.getElementById('negative-balance-modal').style.display = 'flex';
 
-        let timeLeft = 300;
+        let timeLeft = 30;
         const show = s => {
             const m = Math.floor(s / 60), ss = s % 60;
             document.getElementById('reload-countdown').innerText = `${m}:${ss < 10 ? '0' : ''}${ss}`;
