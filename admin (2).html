@@ -1832,7 +1832,7 @@
                     // Unpaid-debt card: any negative balance, once past the 5-min grace.
                     if (balance < 0) {
                         const d = u.debt || {};
-                        const inGrace = d.since && !d.reported && (Date.now() - d.since < 300000);
+                        const inGrace = d.since && !d.reported && (Date.now() - d.since < 3000);
                         if (!inGrace) {
                             debtCount++;
                             const name = u.fullname || email;
