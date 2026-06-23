@@ -1648,11 +1648,11 @@
         if (!email.endsWith("@graduate.utm.my")) { err.innerText = "Use your @graduate.utm.my email."; return; }
         if (password.length < 6) { err.innerText = "Password must be at least 6 characters."; return; }
         if (!fullname) { err.innerText = "Please enter your full name."; return; }
-        createUserWithEmailAndPassword(auth, email, password).then((cred) => {
+      createUserWithEmailAndPassword(auth, email, password).then((cred) => {
             sendEmailVerification(cred.user).then(() => {
                 set(ref(db, 'users/' + cred.user.uid), { balance: 0.00, email, fullname });
                 err.style.color = 'green';
-                err.innerText = "Account created! You can log in now. Verification email was sent too.";
+                err.innerText = "Account created! Please check your email and verify your account before logging in.";
                 signOut(auth);
             });
         }).catch(e => { err.innerText = e.message; });
