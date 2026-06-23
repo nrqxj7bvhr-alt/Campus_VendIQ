@@ -502,22 +502,22 @@
             <div class="settings-label" data-i18n="sec_account">Account</div>
             <div class="card card-border">
                 <div class="profile-info-row">
-                    <span class="pir-label">Full Name</span>
+                    <span class="pir-label" data-i18n="lbl_fullname">Full Name</span>
                     <span class="pir-value" id="pir-name">–</span>
                 </div>
                 <div class="profile-info-row">
-                    <span class="pir-label">Email</span>
+                    <span class="pir-label" data-i18n="lbl_email">Email</span>
                     <span class="pir-value" id="pir-email" style="font-size:13px;">–</span>
                 </div>
                 <div class="profile-info-row">
-                    <span class="pir-label">Balance</span>
+                    <span class="pir-label" data-i18n="lbl_balance">Balance</span>
                     <span class="pir-value" id="pir-balance" style="color:var(--primary);">RM 0.00</span>
                 </div>
             </div>
             <div class="card card-border" style="margin-top:12px;">
-                <h3 style="margin-bottom:12px;font-size:15px;">Edit Full Name</h3>
-                <input type="text" id="edit-name-input" placeholder="Enter new full name">
-                <button onclick="saveFullName()" style="background:var(--primary);">Save Name</button>
+                <h3 style="margin-bottom:12px;font-size:15px;" data-i18n="edit_name_t">Edit Full Name</h3>
+                <input type="text" id="edit-name-input" placeholder="Enter new full name" data-i18n-ph="ph_newname">
+                <button onclick="saveFullName()" style="background:var(--primary);" data-i18n="save_name">Save Name</button>
                 <p id="edit-name-msg" style="font-size:13px;margin-top:8px;"></p>
             </div>
 
@@ -753,7 +753,8 @@
             <h1 data-i18n="bar_history">Transaction History</h1>
         </div>
         <div style="padding:20px;">
-            <button onclick="showLastReceipt()" class="btn-outline btn-sm" style="width:100%;margin-bottom:14px;">🧾 View Last Receipt</button>
+            <button onclick="showLastReceipt()" class="btn-outline btn-sm" style="width:100%;margin-bottom:8px;" data-i18n="last_receipt">🧾 View Last Receipt</button>
+            <p class="text-muted" style="text-align:center;font-size:12px;margin-bottom:14px;" data-i18n="tap_receipt">Tap any transaction for its receipt</p>
             <div id="history-list">
                 <div class="loader"></div>
             </div>
@@ -1061,7 +1062,11 @@
             pw_reset: '🔐 Send Password Reset Email',
             status_ready: 'Ready to vend', status_topup: 'Add balance to start buying',
             status_neg: '⚠️ Negative balance — top up before buying',
-            greet_morning: 'Good morning', greet_afternoon: 'Good afternoon', greet_evening: 'Good evening', welcome: 'Welcome!'
+            greet_morning: 'Good morning', greet_afternoon: 'Good afternoon', greet_evening: 'Good evening', welcome: 'Welcome!',
+            lbl_fullname: 'Full Name', lbl_email: 'Email', lbl_balance: 'Balance',
+            edit_name_t: 'Edit Full Name', save_name: 'Save Name', ph_newname: 'Enter new full name',
+            last_receipt: '🧾 View Last Receipt', no_txns: 'No transactions yet.',
+            r_before: 'Before', r_after: 'After', tap_receipt: 'Tap any transaction for its receipt'
         },
         bm: {
             tagline: 'Pantas · Tanpa Tunai · Pintar',
@@ -1082,7 +1087,11 @@
             pw_reset: '🔐 Hantar E-mel Set Semula Kata Laluan',
             status_ready: 'Sedia untuk membeli', status_topup: 'Tambah baki untuk mula membeli',
             status_neg: '⚠️ Baki negatif — tambah nilai dahulu',
-            greet_morning: 'Selamat pagi', greet_afternoon: 'Selamat tengah hari', greet_evening: 'Selamat petang', welcome: 'Selamat datang!'
+            greet_morning: 'Selamat pagi', greet_afternoon: 'Selamat tengah hari', greet_evening: 'Selamat petang', welcome: 'Selamat datang!',
+            lbl_fullname: 'Nama Penuh', lbl_email: 'E-mel', lbl_balance: 'Baki',
+            edit_name_t: 'Ubah Nama Penuh', save_name: 'Simpan Nama', ph_newname: 'Masukkan nama penuh baharu',
+            last_receipt: '🧾 Lihat Resit Terakhir', no_txns: 'Tiada transaksi lagi.',
+            r_before: 'Sebelum', r_after: 'Selepas', tap_receipt: 'Ketik mana-mana transaksi untuk resitnya'
         }
     };
     window.LANG = (() => { try { return localStorage.getItem('cvq-lang') === 'bm' ? 'bm' : 'en'; } catch (e) { return 'en'; } })();
@@ -1090,6 +1099,7 @@
     window.applyLang = function () {
         document.documentElement.lang = (window.LANG === 'bm' ? 'ms' : 'en');
         document.querySelectorAll('[data-i18n]').forEach(el => { const v = window.t(el.getAttribute('data-i18n')); if (v != null) el.textContent = v; });
+        document.querySelectorAll('[data-i18n-ph]').forEach(el => { const v = window.t(el.getAttribute('data-i18n-ph')); if (v != null) el.setAttribute('placeholder', v); });
         document.querySelectorAll('[data-lang-btn]').forEach(b => b.classList.toggle('active', b.getAttribute('data-lang-btn') === window.LANG));
         if (window.refreshGreeting) window.refreshGreeting();
         if (window.renderAccordion) window.renderAccordion();
@@ -1127,6 +1137,35 @@
         el.className = 'lang-pill' + (on ? ' active' : '');
     };
     window._lowNotified = false;   // debounce low-balance pings
+
+    // ---------- TRANSACTION AMOUNT (derived from the balance change — bulletproof) ----------
+    // Some older transfer records were missing the type/amount fields, which made the
+    // history show "- RM 0.00". The balance before/after is always stored, so we derive
+    // the amount and direction from that instead.
+    window.txnAmount = function (d) {
+        const after = parseFloat(d.balanceAfter || 0);
+        const before = d.balanceBefore !== undefined ? parseFloat(d.balanceBefore) : after;
+        const delta = roundMoney(after - before);          // + = money in, − = money out
+        let amount = Math.abs(delta);
+        if (!amount) amount = parseFloat(d.amount !== undefined ? d.amount : (d.cost || 0)) || 0;
+        return { amount, credit: delta > 0, before, after };
+    };
+
+    // ---------- PER-TRANSACTION RECEIPT (tap any history row) ----------
+    window.showTxnReceipt = function (i) {
+        const d = (window.historyItems || [])[i];
+        if (!d) return;
+        const r = txnAmount(d);
+        document.getElementById('lr-item').innerText = d.item || '–';
+        const totalEl = document.getElementById('lr-total');
+        totalEl.innerText = (r.credit ? '+ RM ' : '- RM ') + r.amount.toFixed(2);
+        totalEl.style.color = r.credit ? 'var(--success)' : 'var(--danger)';
+        document.getElementById('lr-bal-before').innerText = 'RM ' + r.before.toFixed(2);
+        document.getElementById('lr-bal').innerText = 'RM ' + r.after.toFixed(2);
+        document.getElementById('lr-date').innerText = d.timestamp ? new Date(d.timestamp).toLocaleString('en-MY') : '';
+        document.getElementById('lr-machine').innerText = d.machine ? ('📍 ' + d.machine) : '';
+        document.getElementById('receipt-modal').style.display = 'flex';
+    };
 
     // ---------- LAST RECEIPT (re-viewable, stored per-device) ----------
     window.showLastReceipt = function () {
@@ -1901,32 +1940,25 @@
         onValue(ref(db, 'users/' + currentUserUID + '/history'), snap => {
             const list = document.getElementById('history-list');
             list.innerHTML = "";
-            if (!snap.exists()) { list.innerHTML = "<p class='text-muted' style='text-align:center;padding:20px;'>No transactions yet.</p>"; return; }
+            if (!snap.exists()) { list.innerHTML = `<p class='text-muted' style='text-align:center;padding:20px;'>${window.t('no_txns')}</p>`; return; }
             let items = []; snap.forEach(c => { items.push(c.val()); }); items.reverse();
             const totalCount = items.length;
             items = items.slice(0, 10);   // user view: only the 10 most recent
-            items.forEach(d => {
+            window.historyItems = items;  // cache for the per-transaction receipt
+            items.forEach((d, i) => {
+                const r = txnAmount(d);   // derive amount + direction from the balance change
                 const dateStr = new Date(d.timestamp).toLocaleString('en-MY');
-                const type = d.type || 'purchase';
-                const isTopup = type === 'topup';
-                const isTransferIn = type === 'transfer_in';
-                const isTransferOut = type === 'transfer_out';
-                const amount = parseFloat((isTopup || isTransferIn || isTransferOut) ? d.amount || 0 : d.cost || 0);
-                const priceStr = (isTopup || isTransferIn) ? `+ RM ${amount.toFixed(2)}` : `- RM ${amount.toFixed(2)}`;
-                const badgeColor = isTopup ? 'var(--primary)' : isTransferIn ? 'var(--success)' : isTransferOut ? '#64748b' : 'var(--danger)';
-                const machineInfo = d.machine ? ` · ${d.machine}` : (type === 'purchase' ? ' · Machine 1' : "");
-                const balAfter = parseFloat(d.balanceAfter || 0);
-                const delta = (isTopup || isTransferIn) ? amount : -amount;
-                const balBefore = d.balanceBefore !== undefined
-                    ? parseFloat(d.balanceBefore)
-                    : balAfter - delta;
+                const type = d.type || '';
+                const priceStr = (r.credit ? '+ RM ' : '- RM ') + r.amount.toFixed(2);
+                const badgeColor = type === 'topup' ? 'var(--primary)' : r.credit ? 'var(--success)' : type === 'transfer_out' ? '#64748b' : 'var(--danger)';
+                const machineInfo = d.machine ? ` · ${d.machine}` : '';
                 list.innerHTML += `
-                    <div class="history-item">
+                    <div class="history-item" style="cursor:pointer;" onclick="showTxnReceipt(${i})">
                         <div class="hi-top">
-                            <span class="hi-name">${d.item}</span>
+                            <span class="hi-name">${d.item || '—'}</span>
                             <span class="badge" style="background:${badgeColor};flex-shrink:0;">${priceStr}</span>
                         </div>
-                        <div class="hi-meta">${dateStr}${machineInfo} · Before: RM ${balBefore.toFixed(2)} · After: RM ${balAfter.toFixed(2)}</div>
+                        <div class="hi-meta">${dateStr}${machineInfo} · ${window.t('r_before')}: RM ${r.before.toFixed(2)} · ${window.t('r_after')}: RM ${r.after.toFixed(2)}</div>
                     </div>`;
             });
             if (totalCount > 10) {
@@ -2107,6 +2139,8 @@
 
         setStep(3);
         buzz([90, 60, 90]);   // double pulse: purchase complete, receipt ready
+        // Notify the student their purchase/payment went through.
+        pushNote('Campus-VendIQ', (window.LANG === 'bm' ? 'Pembayaran berjaya: ' : 'Payment complete: ') + description + ' — RM ' + totalCost.toFixed(2));
         document.getElementById('hardware-sim-phase').style.display = 'none';
         document.getElementById('receipt-phase').style.display = 'block';
         document.getElementById('receipt-item').innerText = description;
@@ -2236,6 +2270,7 @@
                     document.getElementById('modal-title').innerText = "Payment Successful! ✅";
                     document.getElementById('modal-loader').style.display = "none";
                     closeModalBtn.style.display = "block";
+                    pushNote('Campus-VendIQ', (window.LANG === 'bm' ? 'Tambah nilai berjaya: + RM ' : 'Top-up successful: + RM ') + amountToAdd.toFixed(2));
                     t.value = '';
                 });
             });
