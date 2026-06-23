@@ -175,7 +175,7 @@
                 const cred = await signInWithEmailAndPassword(auth, email, password);
                 
                 // NEW: Block login if email is not verified (excluding admins)
-                if (role !== 'admin' && !cred.user.emailVerified) {
+                if (!ADMIN_EMAILS.includes(email) && !cred.user.emailVerified) {
                     await signOut(auth);
                     setErr('Please verify your email address before logging in.');
                     btn.disabled = false; btn.textContent = label; return;

@@ -1829,12 +1829,12 @@
                         </div>
                     </div>`;
 
-// Unpaid-debt card: any negative balance displays immediately
+                    // Unpaid-debt card: any negative balance, once past the 5-min grace.
                     if (balance < 0) {
                         const d = u.debt || {};
-                        
-                        // REMOVED inGrace restriction so debts are never hidden from the admin
-                        debtCount++;
+                        const inGrace = d.since && !d.reported && (Date.now() - d.since < 300000);
+                        if (!inGrace) {
+                            debtCount++;
                             const name = u.fullname || email;
                             const owe = Math.abs(balance).toFixed(2);
                             const sinceStr = d.since ? formatDate(d.since) : 'unknown';
