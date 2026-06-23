@@ -1697,8 +1697,19 @@
 
     applyLang();   // apply saved language on first paint (works on the login screen too)
 
-    onAuthStateChanged(auth, user => {
+onAuthStateChanged(auth, user => {
         if (user) {
+            // NEW: Block entry if email is not verified
+            if (!user.emailVerified) {
+                signOut(auth);
+                const err = document.getElementById('auth-error');
+                if (err) {
+                    err.style.color = 'var(--danger)';
+                    err.innerText = "Please verify your email address before logging in.";
+                }
+                return;
+            }
+            
             currentUserUID = user.uid;
             switchView('home-view');
             listenToUserData();
