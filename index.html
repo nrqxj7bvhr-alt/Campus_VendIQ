@@ -173,6 +173,14 @@
             btn.disabled = true; const label = btn.textContent; btn.innerHTML = '<span class="spin"></span>';
             try {
                 const cred = await signInWithEmailAndPassword(auth, email, password);
+                
+                // NEW: Block login if email is not verified (excluding admins)
+                if (role !== 'admin' && !cred.user.emailVerified) {
+                    await signOut(auth);
+                    setErr('Please verify your email address before logging in.');
+                    btn.disabled = false; btn.textContent = label; return;
+                }
+
                 if (role === 'admin') {
                     if (!ADMIN_EMAILS.includes(cred.user.email)) {
                         await signOut(auth); setErr('Access denied — not an admin account.');
@@ -184,7 +192,7 @@
                     setErr('Welcome! Opening your wallet…', true);
                     location.href = STUDENT_APP;
                 }
-            } catch (e) {
+            }catch (e) {
                 setErr('Invalid email or password.');
                 btn.disabled = false; btn.textContent = label;
             }

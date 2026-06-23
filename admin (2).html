@@ -710,7 +710,7 @@
     const ADMIN_EMAIL = "campusvendiq@gmail.com";
     const ADMIN_EMAILS = [ADMIN_EMAIL];
     const EMAILJS_PUBLIC_KEY = "e1HTC--jLa_BeyPtr";
-    const EMAILJS_SERVICE_ID = "service_eda27x";
+    const EMAILJS_SERVICE_ID = "service_eda27xv";
     const EMAILJS_TEMPLATE_ID = "template_hzm9nhq";
     const EMAILJS_ALERT_RECIPIENTS = [ADMIN_EMAIL];
     try {
@@ -1829,12 +1829,12 @@
                         </div>
                     </div>`;
 
-                    // Unpaid-debt card: any negative balance, once past the 5-min grace.
+// Unpaid-debt card: any negative balance displays immediately
                     if (balance < 0) {
                         const d = u.debt || {};
-                        const inGrace = d.since && !d.reported && (Date.now() - d.since < 300000);
-                        if (!inGrace) {
-                            debtCount++;
+                        
+                        // REMOVED inGrace restriction so debts are never hidden from the admin
+                        debtCount++;
                             const name = u.fullname || email;
                             const owe = Math.abs(balance).toFixed(2);
                             const sinceStr = d.since ? formatDate(d.since) : 'unknown';
@@ -2241,7 +2241,7 @@
     // into GEMINI_API_KEY below and keep AI_PROVIDER = 'gemini'.
     // Paid option: Claude vision — set AI_PROVIDER = 'claude' and fill ANTHROPIC_API_KEY.
     const AI_PROVIDER     = 'gemini';                // 'gemini' (free) or 'claude'
-    const GEMINI_API_KEY  = "AQ.Ab8RN6Issq5X6pWjxb_iUzcOupr7Q81GBpBsOpczC0_JAr5wPQ";
+    const GEMINI_API_KEY  = "AQ.Ab8RN6KLpLVqEyKQoEyQgqo26OZxT_12H6v25RjQ4zy0R017XA";
     const GEMINI_MODEL    = "gemini-2.5-flash";      // free-tier vision model (2.0-flash has 0 free quota on this key)
     const ANTHROPIC_API_KEY = "";
     const AI_VISION_MODEL = "claude-haiku-4-5";      // cheapest Claude vision
