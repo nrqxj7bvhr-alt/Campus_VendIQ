@@ -842,7 +842,7 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    // Keep the student signed in across reloads AND across the app.html → index hop.
+    // Keep the student signed in across reloads AND across the index.html gateway hop.
     // Without an explicit local persistence, some setups (notably file://) fall back to
     // in-memory auth, which logs the user out on every navigation — the "kicked out,
     // must re-login" bug. Try IndexedDB first, then localStorage.
@@ -1210,7 +1210,7 @@
         if (currentUserData && currentUserData.debt) set(ref(db, `users/${currentUserUID}/debt`), null).catch(() => {});
         showToast('Balance cleared — full access restored. ✅', 'success');
     }
-    // window.debtLogout is wired to logoutToGateway() below (returns to app.html).
+    // window.debtLogout is wired to logoutToGateway() below (returns to index.html).
 
     // ---------- MACHINE LISTENERS ----------
     function attachMachineListeners() {
@@ -1678,11 +1678,11 @@
             .catch(e2 => { err.style.color = 'red'; err.innerText = e2.message; });
     });
 
-    // Log out → go back to the app.html gateway (the Student/Admin chooser),
+    // Log out → go back to the index.html gateway (the Student/Admin chooser),
     // not the in-page student login screen.
     function logoutToGateway() {
         window._loggingOut = true;
-        signOut(auth).finally(() => window.location.replace('app.html'));
+        signOut(auth).finally(() => window.location.replace('index.html'));
     }
     window.debtLogout = logoutToGateway;
 

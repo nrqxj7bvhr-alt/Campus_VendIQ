@@ -1278,10 +1278,10 @@
             .catch((e2) => { err.style.color = "red"; err.innerText = e2.message; });
     });
 
-    // Sign out → return to the app.html gateway (Student/Admin chooser).
+    // Sign out → return to the index.html gateway (Student/Admin chooser).
     function logoutToGateway() {
         window._loggingOut = true;
-        signOut(auth).finally(() => window.location.replace('app.html'));
+        signOut(auth).finally(() => window.location.replace('index.html'));
     }
 
     document.getElementById('logout-btn').addEventListener('click', async () => {
